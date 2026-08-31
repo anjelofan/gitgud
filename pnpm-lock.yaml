@@ -53,9 +53,9 @@ importers:
       prettier-plugin-svelte:
         specifier: ^4.1.1
         version: 4.1.1(prettier@3.9.6)(svelte@5.57.0(@typescript-eslint/types@8.68.0))
-      prettier-plugin-tailwind:
-        specifier: ^2.2.12
-        version: 2.2.12(prettier@3.9.6)(tailwindcss@4.3.3)
+      prettier-plugin-tailwindcss:
+        specifier: ^0.8.1
+        version: 0.8.1(prettier-plugin-svelte@4.1.1(prettier@3.9.6)(svelte@5.57.0(@typescript-eslint/types@8.68.0)))(prettier@3.9.6)
       svelte:
         specifier: ^5.56.1
         version: 5.57.0(@typescript-eslint/types@8.68.0)
@@ -1298,11 +1298,60 @@ packages:
       prettier: ^3.0.0
       svelte: ^5.0.0
 
-  prettier-plugin-tailwind@2.2.12:
-    resolution: {integrity: sha512-2SvZxpsYme0g5MrxGsKM43rx28f9AVlJrbwMnx4a03svCfsHwVGtcN6oN1YlClnEwZbquu3IhVAMcawEMKTjuA==}
+  prettier-plugin-tailwindcss@0.8.1:
+    resolution: {integrity: sha512-iaFMYqDsE4ffdDkn5qup0j5f2aCEBFZrdrZnvu9QKTlWx/iGPeQ4HHu7b7fCPMxeo9nwQBiOAh2nSypdFYWJkw==}
+    engines: {node: '>=20.19'}
     peerDependencies:
-      prettier: ^2.0.0
-      tailwindcss: '*'
+      '@ianvs/prettier-plugin-sort-imports': '*'
+      '@prettier/plugin-hermes': '*'
+      '@prettier/plugin-oxc': '*'
+      '@prettier/plugin-pug': '*'
+      '@shopify/prettier-plugin-liquid': '*'
+      '@trivago/prettier-plugin-sort-imports': '*'
+      '@zackad/prettier-plugin-twig': '*'
+      prettier: ^3.0
+      prettier-plugin-astro: '*'
+      prettier-plugin-css-order: '*'
+      prettier-plugin-jsdoc: '*'
+      prettier-plugin-marko: '*'
+      prettier-plugin-multiline-arrays: '*'
+      prettier-plugin-organize-attributes: '*'
+      prettier-plugin-organize-imports: '*'
+      prettier-plugin-sort-imports: '*'
+      prettier-plugin-svelte: '*'
+    peerDependenciesMeta:
+      '@ianvs/prettier-plugin-sort-imports':
+        optional: true
+      '@prettier/plugin-hermes':
+        optional: true
+      '@prettier/plugin-oxc':
+        optional: true
+      '@prettier/plugin-pug':
+        optional: true
+      '@shopify/prettier-plugin-liquid':
+        optional: true
+      '@trivago/prettier-plugin-sort-imports':
+        optional: true
+      '@zackad/prettier-plugin-twig':
+        optional: true
+      prettier-plugin-astro:
+        optional: true
+      prettier-plugin-css-order:
+        optional: true
+      prettier-plugin-jsdoc:
+        optional: true
+      prettier-plugin-marko:
+        optional: true
+      prettier-plugin-multiline-arrays:
+        optional: true
+      prettier-plugin-organize-attributes:
+        optional: true
+      prettier-plugin-organize-imports:
+        optional: true
+      prettier-plugin-sort-imports:
+        optional: true
+      prettier-plugin-svelte:
+        optional: true
 
   prettier@3.9.6:
     resolution: {integrity: sha512-OpN0zzVdiaiAhxpuuj5efpIS4sY9j7bY6uR5mnj5yPzGkdkjNKSJeUThPb60Jw29QuAZgA4o+/iB49kFiaBX6g==}
@@ -1384,9 +1433,6 @@ packages:
   svelte@5.57.0:
     resolution: {integrity: sha512-NdbDn7fl4be1ViUG0oq/lvG6OZy3oENolV2ONjiqqsfVoeAfzaQAKUcEX3MrQod/Bebv1PgwET9rfXhgn9s4Kg==}
     engines: {node: '>=18'}
-
-  tailwind-classes-sorter@0.2.5:
-    resolution: {integrity: sha512-7S0AaDitt+Fjy9m3v0GrQ/KZrCswNDD25SSXX9U/HIB5h9lk0ImSkq/VVcnzu78cRQxR0fFfvHYFdfcqN3dCGA==}
 
   tailwind-csstree@0.3.3:
     resolution: {integrity: sha512-je9J5UYRsTJqAjYrIBMMlge8T/rreRd44pJxgG5Zx/zeo4kAC/liUKqzztRZrGlYRJLvIf2Cb1DVJMTXSzEShA==}
@@ -2531,11 +2577,11 @@ snapshots:
       prettier: 3.9.6
       svelte: 5.57.0(@typescript-eslint/types@8.68.0)
 
-  prettier-plugin-tailwind@2.2.12(prettier@3.9.6)(tailwindcss@4.3.3):
+  prettier-plugin-tailwindcss@0.8.1(prettier-plugin-svelte@4.1.1(prettier@3.9.6)(svelte@5.57.0(@typescript-eslint/types@8.68.0)))(prettier@3.9.6):
     dependencies:
       prettier: 3.9.6
-      tailwind-classes-sorter: 0.2.5
-      tailwindcss: 4.3.3
+    optionalDependencies:
+      prettier-plugin-svelte: 4.1.1(prettier@3.9.6)(svelte@5.57.0(@typescript-eslint/types@8.68.0))
 
   prettier@3.9.6: {}
 
@@ -2671,10 +2717,6 @@ snapshots:
       zimmerframe: 1.1.4
     transitivePeerDependencies:
       - '@typescript-eslint/types'
-
-  tailwind-classes-sorter@0.2.5:
-    dependencies:
-      find-up: 5.0.0
 
   tailwind-csstree@0.3.3(@eslint/css@1.4.0):
     optionalDependencies:
