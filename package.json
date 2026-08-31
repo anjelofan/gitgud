@@ -9,6 +9,7 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"es:fix": "eslint --cache --fix .",
+		"fix": "pnpm fmt:fix && pnpm es:fix",
 		"fmt": "prettier --cache --cache-location .prettiercache --check .",
 		"fmt:fix": "prettier --cache --cache-location .prettiercache --write .",
 		"lint": "pnpm --workspace-root --parallel /^lint:/",
