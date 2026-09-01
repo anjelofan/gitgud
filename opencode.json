@@ -1,0 +1,73 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "default_agent": "plan",
+    "mcp": {
+        "svelte": {
+            "type": "remote",
+            "url": "https://mcp.svelte.dev/mcp"
+        },
+        "context7": {
+            "type": "remote",
+            "url": "https://mcp.context7.com/mcp"
+        }
+    },
+    "permission": {
+        "bash": {
+            "*": "ask",
+            "ls *": "allow",
+            "tree *": "allow",
+            "find *": "allow",
+            "grep *": "allow",
+            "git diff *": "allow",
+            "git show *": "allow",
+            "git status *": "allow",
+            "git log *": "allow",
+            "git rev-parse *": "allow",
+            "git branch *": "allow",
+            "gh issue list *": "allow",
+            "gh issue view *": "allow",
+            "gh pr list *": "allow",
+            "gh pr view *": "allow",
+            "pnpm lint": "allow",
+            "pnpm lint:es *": "allow",
+            "pnpm lint:sv *": "allow",
+            "pnpm fmt": "allow",
+            "pnpm fmt:fix": "allow",
+            "pnpm es:fix": "allow",
+            "pnpm fix": "allow",
+            "pnpm build": "allow",
+            "pnpm prepare": "allow",
+            "git commit *": "deny",
+            "git push *": "deny",
+            "git commit": "deny",
+            "git push": "deny",
+            "npm *": "deny",
+            "npx *": "deny",
+            "pnpx *": "deny",
+            "yarn *": "deny",
+            "bun *": "deny",
+            "bunx *": "deny",
+            "pnpm dlx *": "deny",
+            "pnpm exec *": "deny",
+            "pnpm run *": "deny",
+            "pnpm dev": "deny",
+            "pnpm preview": "deny",
+            "cat .env": "deny",
+            "cat .env.*": "deny"
+        },
+        "edit": {
+            "*": "ask",
+            "src/*": "allow",
+            "static/*": "allow",
+            ".agents/skills/*": "allow"
+        },
+        "skill": {
+            "*": "ask",
+            "code-style": "allow",
+            "vertically-sliced-feature-modules": "allow",
+            "adversarial-code-review": "allow",
+            "typescript-best-practices": "allow",
+            "svelte-best-practices": "allow"
+        }
+    }
+}
