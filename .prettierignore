@@ -15,3 +15,7 @@ node_modules
 .env
 .env.*
 !.env.example
+
+# Cache Files
+.eslintcache
+.prettiercache
