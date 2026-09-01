@@ -20,6 +20,7 @@ export default defineConfig(
             'build/**/*',
             'node_modules/**/*',
             'vitest-results/**/*',
+            'playwright-results/**/*',
         ],
     },
     { languageOptions: { globals: { ...globals.browser, ...globals.node } } },

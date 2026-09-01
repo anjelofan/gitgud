@@ -30,3 +30,6 @@ vite.config.ts.timestamp-*
 
 # Vitest
 vitest-results
+
+# Playwright
+playwright-results
