@@ -14,7 +14,14 @@ import { tailwind4 } from 'tailwind-csstree';
 import svelteConfig from './svelte.config.js';
 
 export default defineConfig(
-    { ignores: ['.svelte-kit/**/*', 'build/**/*', 'node_modules/**/*'] },
+    {
+        ignores: [
+            '.svelte-kit/**/*',
+            'build/**/*',
+            'node_modules/**/*',
+            'vitest-results/**/*',
+        ],
+    },
     { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
     {
         files: ['**/*.html'],

@@ -14,7 +14,8 @@
         "fmt:fix": "prettier --cache --cache-location .prettiercache --write .",
         "lint": "pnpm --workspace-root --parallel /^lint:/",
         "lint:es": "eslint --cache .",
-        "lint:sv": "svelte-check --tsconfig ./tsconfig.json"
+        "lint:sv": "svelte-check --tsconfig ./tsconfig.json",
+        "test:unit": "vitest run"
     },
     "devDependencies": {
         "@bastidood/eslint-plugin-imsort": "^0.12.0",

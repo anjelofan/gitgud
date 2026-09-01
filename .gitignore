@@ -27,3 +27,6 @@ vite.config.ts.timestamp-*
 
 # Prettier
 .prettiercache
+
+# Vitest
+vitest-results
