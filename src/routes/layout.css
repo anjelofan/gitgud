@@ -1,1 +1,150 @@
 @import 'tailwindcss';
+
+@theme inline {
+  --color-csi-blue-100: rgb(235 253 255);
+  --color-csi-blue-200: rgb(183 249 255);
+  --color-csi-blue-300: rgb(131 245 255);
+  --color-csi-blue-400: rgb(78 231 245);
+  --color-csi-blue-500: rgb(0 197 215);
+  --color-csi-blue-600: rgb(0 158 173);
+  --color-csi-blue-700: rgb(0 125 136);
+  --color-csi-blue-800: rgb(0 74 81);
+  --color-csi-blue-900: rgb(0 44 48);
+  --color-csi-gold-100: rgb(255 251 235);
+  --color-csi-gold-200: rgb(255 243 194);
+  --color-csi-gold-300: rgb(255 236 157);
+  --color-csi-gold-400: rgb(255 224 97);
+  --color-csi-gold-500: rgb(247 207 47);
+  --color-csi-gold-600: rgb(212 177 38);
+  --color-csi-gold-700: rgb(161 133 26);
+  --color-csi-gold-800: rgb(122 98 15);
+  --color-csi-gold-900: rgb(61 46 0);
+  --color-csi-grayscale-100: rgb(249 250 251);
+  --color-csi-grayscale-200: rgb(226 226 226);
+  --color-csi-grayscale-300: rgb(194 194 194);
+  --color-csi-grayscale-400: rgb(168 168 168);
+  --color-csi-grayscale-500: rgb(138 138 138);
+  --color-csi-grayscale-600: rgb(110 110 110);
+  --color-csi-grayscale-700: rgb(87 87 87);
+  --color-csi-grayscale-800: rgb(61 61 61);
+  --color-csi-grayscale-900: rgb(33 33 33);
+  --color-csi-blue: var(--color-csi-blue-500);
+  --color-csi-gold: var(--color-csi-gold-500);
+  --color-csi-white: var(--color-csi-grayscale-100);
+  --color-csi-black: var(--color-csi-grayscale-900);
+  --color-mni: #ff96bd;
+  --color-service: #e9d15c;
+  --color-innov: #ffa047;
+  --color-engg: #ff6864;
+  --color-exte: #3566aa;
+  --color-bnc: #44a966;
+  --color-blue: rgb(53 173 187);
+  --color-black: rgb(37 50 66);
+  --color-warm-white: var(--color-csi-grayscale-200);
+  --color-blue-white: rgb(215 230 237);
+  --color-danger: rgb(217 43 52);
+  --color-success: rgb(37 184 103);
+  --color-warning: rgb(255 170 51);
+  --color-neutral: rgb(45 75 224);
+}
+
+@layer base {
+  :root {
+    --var-color-background: var(--color-csi-white);
+    --var-color-foreground: var(--color-csi-black);
+
+    --var-color-invert: var(--color-csi-black);
+    --var-color-invert-foreground: var(--color-csi-white);
+
+    --var-color-primary: var(--color-csi-blue);
+    --var-color-primary-foreground: var(--color-csi-white);
+
+    --var-color-highlight: var(--color-blue-white);
+    --var-color-highlight-foreground: var(--color-csi-black);
+
+    --var-color-secondary: var(--color-csi-gold);
+    --var-color-secondary-foreground: var(--color-csi-black);
+
+    --var-color-muted: var(--color-csi-grayscale-200);
+    --var-color-muted-foreground: var(--color-csi-black);
+
+    --var-color-button: var(--color-black);
+    --var-color-button-foreground: var(--color-white);
+    --var-color-button-hover: var(--color-csi-blue);
+
+    --var-color-filter: var(--color-csi-white);
+    --var-color-filter-foreground: var(--color-csi-black);
+    --var-color-filter-hover: var(--color-csi-blue);
+    --var-color-selected-filter: var(--color-black);
+    --var-color-selected-filter-foreground: var(--color-csi-white);
+
+    --var-color-float: var(--color-csi-white);
+    --var-color-float-foreground: var(--color-csi-black);
+  }
+
+  :root[data-theme='dark'] {
+    --var-color-background: var(--color-csi-black);
+    --var-color-foreground: var(--color-csi-white);
+
+    --var-color-invert: var(--color-csi-white);
+    --var-color-invert-foreground: var(--color-csi-black);
+
+    --var-color-primary: var(--color-csi-blue);
+    --var-color-primary-foreground: var(--color-csi-black);
+
+    --var-color-highlight: var(--color-black);
+    --var-color-highlight-foreground: var(--color-csi-white);
+
+    --var-color-secondary: var(--color-csi-gold);
+    --var-color-secondary-foreground: var(--color-csi-black);
+
+    --var-color-muted: var(--color-csi-grayscale-800);
+    --var-color-muted-foreground: var(--color-csi-white);
+
+    --var-color-button: var(--color-csi-blue);
+    --var-color-button-foreground: var(--color-csi-black);
+    --var-color-button-hover: var(--color-csi-white);
+
+    --var-color-filter: var(--color-blue-white);
+    --var-color-filter-foreground: var(--color-csi-black);
+    --var-color-filter-hover: var(--color-csi-white);
+    --var-color-selected-filter: var(--color-csi-blue);
+    --var-color-selected-filter-foreground: var(--color-csi-black);
+
+    --var-color-float: var(--color-csi-grayscale-800);
+    --var-color-float-foreground: var(--color-csi-white);
+  }
+}
+
+@theme {
+  --color-background: var(--var-color-background);
+  --color-foreground: var(--var-color-foreground);
+
+  --color-invert: var(--var-color-invert);
+  --color-invert-foreground: var(--var-color-invert-foreground);
+
+  --color-primary: var(--var-color-primary);
+  --color-primary-foreground: var(--var-color-primary-foreground);
+
+  --color-highlight: var(--var-color-highlight);
+  --color-highlight-foreground: var(--var-color-highlight-foreground);
+
+  --color-secondary: var(--var-color-secondary);
+  --color-secondary-foreground: var(--var-color-secondary-foreground);
+
+  --color-muted: var(--var-color-muted);
+  --color-muted-foreground: var(--var-color-muted-foreground);
+
+  --color-button: var(--var-color-button);
+  --color-button-foreground: var(--var-color-button-foreground);
+  --color-button-hover: var(--var-color-button-hover);
+
+  --color-filter: var(--var-color-filter);
+  --color-filter-foreground: var(--var-color-filter-foreground);
+  --color-filter-hover: var(--var-color-filter-hover);
+  --color-selected-filter: var(--var-color-selected-filter);
+  --color-selected-filter-foreground: var(--var-color-selected-filter-foreground);
+
+  --color-float: var(--var-color-float);
+  --color-float-foreground: var(--var-color-float-foreground);
+}
