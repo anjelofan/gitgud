@@ -37,6 +37,9 @@
             "pnpm fix": "allow",
             "pnpm build": "allow",
             "pnpm prepare": "allow",
+            "pnpm test": "allow",
+            "pnpm test:unit": "allow",
+            "pnpm test:unit *": "allow",
             "git commit *": "deny",
             "git push *": "deny",
             "git commit": "deny",
@@ -59,6 +62,7 @@
             "*": "ask",
             "src/*": "allow",
             "static/*": "allow",
+            "tests/*": "allow",
             ".agents/skills/*": "allow"
         },
         "skill": {
