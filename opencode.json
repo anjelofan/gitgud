@@ -72,7 +72,8 @@
             "adversarial-code-review": "allow",
             "typescript-best-practices": "allow",
             "svelte-best-practices": "allow",
-            "testing-guidelines": "allow"
+            "testing-guidelines": "allow",
+            "valibot-best-practices": "allow"
         }
     }
 }

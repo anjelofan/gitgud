@@ -31,6 +31,12 @@
       "skillPath": "plugins/typescript/skills/typescript-best-practices/SKILL.md",
       "computedHash": "6085d9e0855b40bb7c13d72015a7f97413af3540479b20188b52de152e3874a2"
     },
+    "valibot-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/typescript/skills/valibot-best-practices/SKILL.md",
+      "computedHash": "58d9e904026a5df1d5408f6c28d975160cf066dfc42dc5712f3b7782aa5c83ea"
+    },
     "vertically-sliced-feature-modules": {
       "source": "BastiDood/skills",
       "sourceType": "github",
