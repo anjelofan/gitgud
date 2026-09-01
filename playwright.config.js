@@ -6,6 +6,7 @@ export default defineConfig({
     command: 'pnpm preview',
     port: 4173,
     reuseExistingServer: !process.env.CI,
+    gracefulShutdown: { signal: 'SIGINT', timeout: 0 },
   },
   testDir: './tests',
   outputDir: 'playwright-results',
