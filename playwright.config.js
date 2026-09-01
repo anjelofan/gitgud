@@ -7,7 +7,7 @@ export default defineConfig({
     port: 4173,
     reuseExistingServer: !process.env.CI,
   },
-  testDir: 'tests/playwright',
+  testDir: './tests',
   outputDir: 'playwright-results',
   use: {
     baseURL: 'http://localhost:4173',

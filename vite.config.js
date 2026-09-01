@@ -1,5 +1,5 @@
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
@@ -8,7 +8,8 @@ export default defineConfig({
     name: 'server',
     environment: 'node',
     expect: { requireAssertions: true },
-    include: ['tests/vitest/**/*.{test,spec}.{js,ts}'],
+    include: ['src/**/*.test.{js,ts}'],
+    exclude: [...configDefaults.exclude, 'tests/**'],
     reporters: ['default', 'json'],
     outputFile: { json: './vitest-results/.last-run.json' },
   },
