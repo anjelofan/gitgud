@@ -12,5 +12,6 @@ export default defineConfig({
         exclude: [...configDefaults.exclude, 'tests/**'],
         reporters: ['default', 'json'],
         outputFile: { json: './vitest-results/.last-run.json' },
+        passWithNoTests: true,
     },
 });

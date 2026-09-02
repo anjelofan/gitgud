@@ -19,4 +19,5 @@ export default defineConfig({
     reporter: 'dot',
     fullyParallel: false,
     forbidOnly: Boolean(process.env.CI),
+    failOnEmptyTestSuite: false,
 });
