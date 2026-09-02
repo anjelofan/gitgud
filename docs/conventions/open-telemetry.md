@@ -124,17 +124,17 @@ return tracer.asyncSpan('list-assignments', async (span) => {
 
 Use a dot-separated namespace with `snake_case` property names: `namespace.resource.property`.
 
-| Prefix          | Context                  |
-| --------------- | ------------------------ |
-| `http.*`        | HTTP request/response metadata |
-| `network.*`     | Client network information |
-| `session.*`     | Authenticated request context (spans) |
-| `user.*`        | User entity (log attributes) |
-| `classroom.*`   | Classroom entity         |
-| `assignment.*`  | Assignment entity        |
-| `submission.*`  | Submission entity        |
-| `github.*`      | GitHub API interaction context |
-| `database.*`    | Database query context   |
+| Prefix         | Context                               |
+| -------------- | ------------------------------------- |
+| `http.*`       | HTTP request/response metadata        |
+| `network.*`    | Client network information            |
+| `session.*`    | Authenticated request context (spans) |
+| `user.*`       | User entity (log attributes)          |
+| `classroom.*`  | Classroom entity                      |
+| `assignment.*` | Assignment entity                     |
+| `submission.*` | Submission entity                     |
+| `github.*`     | GitHub API interaction context        |
+| `database.*`   | Database query context                |
 
 ### Attribute Guidelines
 

@@ -1,9 +1,9 @@
 ---
 name: debug-local-postgres
 description: >
-  MUST be used whenever the agent needs to query, inspect, or debug values from the local
-  PostgreSQL database. This includes checking classroom, assignment, submission, or user
-  data, or any other database-stored information.
+    MUST be used whenever the agent needs to query, inspect, or debug values from the local
+    PostgreSQL database. This includes checking classroom, assignment, submission, or user
+    data, or any other database-stored information.
 ---
 
 # Debug Local PostgreSQL
@@ -26,12 +26,12 @@ docker compose -f compose.yml -f compose.dev.yml exec postgres psql -U postgres
 
 Pre-written read-only queries for common debugging scenarios:
 
-| Script                                  | Use Case                                    |
-| --------------------------------------- | ------------------------------------------- |
-| [list-tables.sql](scripts/list-tables.sql)       | List all user tables across schemas         |
-| [table-rows.sql](scripts/table-rows.sql)         | Sample rows from a table                    |
+| Script                                             | Use Case                                       |
+| -------------------------------------------------- | ---------------------------------------------- |
+| [list-tables.sql](scripts/list-tables.sql)         | List all user tables across schemas            |
+| [table-rows.sql](scripts/table-rows.sql)           | Sample rows from a table                       |
 | [active-sessions.sql](scripts/active-sessions.sql) | Inspect active connections and running queries |
-| [db-size.sql](scripts/db-size.sql)               | Database and per-table disk usage           |
+| [db-size.sql](scripts/db-size.sql)                 | Database and per-table disk usage              |
 
 ## SQL Conventions
 
