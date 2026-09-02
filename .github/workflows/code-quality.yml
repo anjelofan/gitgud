@@ -1,0 +1,62 @@
+name: Check Code Quality
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  check_stability:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/postgres
+      GITHUB_API_BASE: http://localhost:4001
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 30s
+          --health-timeout 2s
+          --health-retries 3
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Check Formatting
+        run: pnpm fmt
+      - name: Run Linters
+        run: pnpm lint
+      - name: Build project
+        run: pnpm build
+      - name: Set-up E2E environment
+        run: pnpm test:e2e:setup
+      - name: Test Codebase
+        run: pnpm test
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results
+          path: |
+            playwright-results/
+            vitest-results/
+          retention-days: 90
+          include-hidden-files: true
