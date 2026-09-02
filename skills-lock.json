@@ -19,6 +19,12 @@
       "skillPath": "plugins/drizzle/skills/drizzle-orm-best-practices/SKILL.md",
       "computedHash": "2ce1f39ffd62080399e6d83835ad4237daec3555e44b4525214d765514d0fcd9"
     },
+    "open-telemetry-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/observability/skills/open-telemetry-best-practices/SKILL.md",
+      "computedHash": "557da82db6641d722a9ada151e72e9c9cbacba6edcd8ad3473d0c36635fdc4d4"
+    },
     "svelte-best-practices": {
       "source": "BastiDood/skills",
       "sourceType": "github",
