@@ -18,7 +18,10 @@
         "test": "pnpm test:unit && pnpm test:e2e",
         "test:e2e": "playwright test",
         "test:e2e:setup": "playwright install chromium",
-        "test:unit": "vitest run"
+        "test:unit": "vitest run",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:studio": "drizzle-kit studio"
     },
     "devDependencies": {
         "@bastidood/eslint-plugin-imsort": "^0.12.0",
@@ -31,6 +34,8 @@
         "@sveltejs/kit": "^2.63.0",
         "@sveltejs/vite-plugin-svelte": "^7.1.2",
         "@tailwindcss/vite": "^4.3.3",
+        "@types/pg": "^8.23.1",
+        "drizzle-kit": "^0.31.10",
         "eslint": "^10.9.1",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-svelte": "^3.23.0",
@@ -50,6 +55,9 @@
     },
     "packageManager": "pnpm@11.24.0+sha512.bd27e345e976dcb0be0b7a1228217b049a817e21b1f355c90dbe7dc46671895a8bc1e6d06c24554505ea93ea0b45f489a27ec1bfbc8de6a9659fca0f16fa0000",
     "dependencies": {
+        "dotenv": "^17.4.2",
+        "drizzle-orm": "^0.45.2",
+        "pg": "^8.23.0",
         "valibot": "^1.4.2"
     }
 }
