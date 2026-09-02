@@ -23,14 +23,14 @@ One-time setup: `pnpm test:e2e:setup` installs the Playwright chromium browser. 
 
 Rules:
 
-- Tests must never hit the real GitHub API. The GitHub client reads its base URL from `GITHUB_API_BASE` (defaults to the real API); tests point it at the fake GitHub server under `tests/fake-github/`.
-- [`testing-guidelines`](.agents/skills/testing-guidelines/SKILL.md) is authoritative on test admission; framework documentation and tooling skills are consulted for tool mechanics only.
+- Tests must never hit the real GitHub API; the fake-GitHub boundary is detailed in [`tests/AGENTS.md`](tests/AGENTS.md) and [`docs/conventions/unit-test.md`](docs/conventions/unit-test.md).
 - Vitest and Playwright questions go through Context7 (`/vitest-dev/vitest`, `/microsoft/playwright`), consistent with the MCP instructions.
 
-See [`TESTING.md`](TESTING.md) for details, and [`REVIEW.md`](REVIEW.md) for review expectations.
+See [`TESTING.md`](TESTING.md) for commands, setup, and skill precedence (test admission is governed by [`testing-guidelines`](.agents/skills/testing-guidelines/SKILL.md)), [`tests/AGENTS.md`](tests/AGENTS.md) for end-to-end test rules, and [`docs/conventions/unit-test.md`](docs/conventions/unit-test.md) for colocated unit-test rules. Review expectations live in [`REVIEW.md`](REVIEW.md).
 
 ## Conventions
 
+- Before modifying source code, read the relevant topic documents routed from [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md). Before writing end-to-end tests, read [`tests/AGENTS.md`](tests/AGENTS.md); for colocated unit tests, read [`docs/conventions/unit-test.md`](docs/conventions/unit-test.md). Before schema or migration work, read [`src/lib/server/db/AGENTS.md`](src/lib/server/db/AGENTS.md).
 - Assume the current working directory is already the project root. Do not use directory-changing flags like `git -C` or `pnpm --filter`.
 - Never run `git commit` or `git push`. Humans own git history; leave staged changes for review instead.
 - If the user corrects you on conventions or workflows, update your memory files accordingly so you will not make the same mistake again.
@@ -41,4 +41,4 @@ Review expectations live in [`REVIEW.md`](REVIEW.md).
 
 ## Skills
 
-The agent skills in [`.agents/skills/`](.agents/skills) are vendored from [BastiDood/skills](https://github.com/BastiDood/skills) (MPL-2.0) via `npx skills add`. Keep this attribution when updating them.
+The agent skills in [`.agents/skills/`](.agents/skills) are vendored from [BastiDood/skills](https://github.com/BastiDood/skills) (MPL-2.0) via `npx skills add` and tracked in [`skills-lock.json`](skills-lock.json). Keep this attribution when updating them. Project-authored skills (not in the lockfile), such as [`debug-local-postgres`](.agents/skills/debug-local-postgres/SKILL.md), live alongside them.
