@@ -21,7 +21,9 @@
         "test:unit": "vitest run",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
-        "db:studio": "drizzle-kit studio"
+        "db:studio": "drizzle-kit studio",
+        "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up --wait",
+        "docker:dev:down": "docker compose -f compose.yml -f compose.dev.yml down --remove-orphans"
     },
     "devDependencies": {
         "@bastidood/eslint-plugin-imsort": "^0.12.0",

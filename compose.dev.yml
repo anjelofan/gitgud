@@ -1,0 +1,23 @@
+name: gitgud
+
+services:
+  postgres:
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    ports:
+      - host_ip: 127.0.0.1
+        published: 5432
+        target: 5432
+        protocol: tcp
+    networks:
+      - dev-database
+
+networks:
+  dev-database:
+    external: false
+    driver: bridge
+    name: "dev-database"
+    internal: false

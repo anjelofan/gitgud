@@ -1,0 +1,18 @@
+services:
+  # Define ports, restart policies, networks
+  # in dev and prod compose files
+
+  postgres:
+    image: postgres:17-alpine
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 30s
+      timeout: 2s
+      retries: 3
+      start_period: 15s
+      start_interval: 1s
+
+volumes:
+  postgres-data:
