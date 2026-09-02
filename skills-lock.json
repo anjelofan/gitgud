@@ -13,6 +13,12 @@
       "skillPath": "plugins/architecture/skills/code-style/SKILL.md",
       "computedHash": "8aa5e6e7c484e20afac1f1b97c55e7c277065f5de2e9c3831fd5d99ec8cb2631"
     },
+    "drizzle-orm-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/drizzle/skills/drizzle-orm-best-practices/SKILL.md",
+      "computedHash": "2ce1f39ffd62080399e6d83835ad4237daec3555e44b4525214d765514d0fcd9"
+    },
     "svelte-best-practices": {
       "source": "BastiDood/skills",
       "sourceType": "github",

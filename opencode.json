@@ -70,6 +70,7 @@
             "code-style": "allow",
             "vertically-sliced-feature-modules": "allow",
             "adversarial-code-review": "allow",
+            "drizzle-orm-best-practices": "allow",
             "typescript-best-practices": "allow",
             "svelte-best-practices": "allow",
             "testing-guidelines": "allow",
