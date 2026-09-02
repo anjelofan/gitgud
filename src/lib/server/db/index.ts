@@ -7,6 +7,8 @@ import { Pool } from 'pg';
 
 import { building } from '$app/env';
 
+import * as schema from './schema/index.js';
+
 function initConnection() {
     if (!building)
         assert(
@@ -24,5 +26,4 @@ function initConnection() {
 
 const pool = initConnection();
 
-// TODO: Add schema to enable relational queries
-export const db = drizzle({ client: pool });
+export const db = drizzle({ client: pool, schema });
