@@ -2,12 +2,12 @@
 
 Commands (see [`package.json`](package.json)):
 
-| Command | What it does |
-| --- | --- |
-| `pnpm test:unit` | Vitest run (node environment) |
-| `pnpm test:e2e` | Playwright end-to-end tests (requires `pnpm build` first) |
-| `pnpm test` | Unit tests, then end-to-end tests |
-| `pnpm test:e2e:setup` | One-time Playwright chromium browser install |
+| Command               | What it does                                              |
+| --------------------- | --------------------------------------------------------- |
+| `pnpm test:unit`      | Vitest run (node environment)                             |
+| `pnpm test:e2e`       | Playwright end-to-end tests (requires `pnpm build` first) |
+| `pnpm test`           | Unit tests, then end-to-end tests                         |
+| `pnpm test:e2e:setup` | One-time Playwright chromium browser install              |
 
 ## Layout
 

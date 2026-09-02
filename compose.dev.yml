@@ -19,5 +19,5 @@ networks:
   dev-database:
     external: false
     driver: bridge
-    name: "dev-database"
+    name: 'dev-database'
     internal: false

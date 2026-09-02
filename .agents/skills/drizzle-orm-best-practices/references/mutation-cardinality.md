@@ -20,12 +20,12 @@ There is no portable Drizzle affected-row property. Verify the current adapter c
 import { and, eq, sql } from 'drizzle-orm';
 
 const result = await db
-	.update(comments)
-	.set({ deletedAt: sql`now()` })
-	.where(and(eq(comments.id, commentId), eq(comments.userId, currentUserId)));
+    .update(comments)
+    .set({ deletedAt: sql`now()` })
+    .where(and(eq(comments.id, commentId), eq(comments.userId, currentUserId)));
 
 if (result.rowCount !== 1)
-	throw new Error(`Expected to delete one comment, changed ${result.rowCount}`);
+    throw new Error(`Expected to delete one comment, changed ${result.rowCount}`);
 ```
 
 Use `.returning()` when supported and when the caller needs returned columns. Use `.$returningId()` for MySQL inserted identifiers. Treat either API as data retrieval, not as a portable substitute for affected-row metadata.

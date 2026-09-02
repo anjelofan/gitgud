@@ -19,12 +19,12 @@ Do not put a changing history under one span-attribute key. Setting the same key
 ```jsonc
 // GOOD: the span records material inputs and the final operation result.
 {
-	"name": "order.submit",
-	"attributes": {
-		"com.acme.order.channel": "web",
-		"com.acme.order.item_count": 3,
-		"com.acme.order.final_state": "submitted",
-	},
+    "name": "order.submit",
+    "attributes": {
+        "com.acme.order.channel": "web",
+        "com.acme.order.item_count": 3,
+        "com.acme.order.final_state": "submitted",
+    },
 }
 ```
 
@@ -39,12 +39,12 @@ Strongly prefer a stable `eventName` for every structured log record that repres
 ```jsonc
 // GOOD: the event records one transition within the operation.
 {
-	"eventName": "order.state_changed",
-	"body": "Order state changed",
-	"attributes": {
-		"com.acme.order.from_state": "pending",
-		"com.acme.order.to_state": "submitted",
-	},
+    "eventName": "order.state_changed",
+    "body": "Order state changed",
+    "attributes": {
+        "com.acme.order.from_state": "pending",
+        "com.acme.order.to_state": "submitted",
+    },
 }
 ```
 
@@ -73,20 +73,20 @@ Keep a log body stable and concise across occurrences. Bind occurrence-specific 
 ```jsonc
 // BAD: a meaningful occurrence lacks a stable event identity and hides its values in the body.
 {
-	"body": "Inventory for books fell from 12 to 4 items",
+    "body": "Inventory for books fell from 12 to 4 items",
 }
 ```
 
 ```jsonc
 // GOOD: a meaningful occurrence has a stable identity and structured context.
 {
-	"eventName": "inventory.capacity_degraded",
-	"body": "Inventory capacity degraded",
-	"attributes": {
-		"com.acme.inventory.category": "books",
-		"com.acme.inventory.previous_count": 12,
-		"com.acme.inventory.current_count": 4,
-	},
+    "eventName": "inventory.capacity_degraded",
+    "body": "Inventory capacity degraded",
+    "attributes": {
+        "com.acme.inventory.category": "books",
+        "com.acme.inventory.previous_count": 12,
+        "com.acme.inventory.current_count": 4,
+    },
 }
 ```
 
@@ -120,16 +120,16 @@ When no standard attribute applies:
 ```jsonc
 // BAD: the names are ambiguous and can collide with semantic conventions.
 {
-	"response_status": 200,
-	"entity_count": 12,
+    "response_status": 200,
+    "entity_count": 12,
 }
 ```
 
 ```jsonc
 // GOOD: serialized telemetry uses the standard HTTP name and the domain value uses an application namespace.
 {
-	"http.response.status_code": 200,
-	"com.acme.catalog.item_count": 12,
+    "http.response.status_code": 200,
+    "com.acme.catalog.item_count": 12,
 }
 ```
 
@@ -148,39 +148,39 @@ const tracer = trace.getTracer('com.acme.orders');
 const logger = logs.getLogger('com.acme.orders');
 
 await tracer.startActiveSpan(
-	'order.submit',
-	{
-		attributes: {
-			'com.acme.order.channel': 'web',
-			'com.acme.order.item_count': 3,
-		},
-	},
-	async span => {
-		try {
-			logger.emit({
-				eventName: 'order.state_changed',
-				severityNumber: SeverityNumber.INFO,
-				body: 'Order state changed',
-				attributes: {
-					'com.acme.order.from_state': 'pending',
-					'com.acme.order.to_state': 'submitted',
-				},
-			});
+    'order.submit',
+    {
+        attributes: {
+            'com.acme.order.channel': 'web',
+            'com.acme.order.item_count': 3,
+        },
+    },
+    async (span) => {
+        try {
+            logger.emit({
+                eventName: 'order.state_changed',
+                severityNumber: SeverityNumber.INFO,
+                body: 'Order state changed',
+                attributes: {
+                    'com.acme.order.from_state': 'pending',
+                    'com.acme.order.to_state': 'submitted',
+                },
+            });
 
-			span.setAttribute('com.acme.order.final_state', 'submitted');
-			span.setStatus({ code: SpanStatusCode.OK });
-		} catch (error) {
-			if (Error.isError(error)) {
-				span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
-				span.setAttribute(ATTR_ERROR_TYPE, error.name);
-			} else {
-				span.setStatus({ code: SpanStatusCode.ERROR });
-			}
-			throw error;
-		} finally {
-			span.end();
-		}
-	},
+            span.setAttribute('com.acme.order.final_state', 'submitted');
+            span.setStatus({ code: SpanStatusCode.OK });
+        } catch (error) {
+            if (Error.isError(error)) {
+                span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+                span.setAttribute(ATTR_ERROR_TYPE, error.name);
+            } else {
+                span.setStatus({ code: SpanStatusCode.ERROR });
+            }
+            throw error;
+        } finally {
+            span.end();
+        }
+    },
 );
 ```
 

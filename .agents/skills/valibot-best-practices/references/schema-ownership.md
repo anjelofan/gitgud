@@ -6,8 +6,8 @@ Define the schema once and infer the type from it. Export both under the same na
 // BAD: hand-written type drifts from the schema
 const UserSchema = v.object({ id: v.string(), name: v.string() });
 interface UserInput {
-	id: string;
-	name: string;
+    id: string;
+    name: string;
 }
 
 // GOOD: schema and type share one name, one definition
