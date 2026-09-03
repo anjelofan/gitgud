@@ -10,6 +10,7 @@ Style conventions are machine-enforced by [`eslint.config.js`](../eslint.config.
 
 Read the topic document that applies to the current task before writing code.
 
+- [`conventions/code-organization.md`](./conventions/code-organization.md) — required when creating any source file (JS-by-default rule, `$lib` layout, component prop typing).
 - [`conventions/open-telemetry.md`](./conventions/open-telemetry.md) — required for route files (`load` functions, form actions, `hooks.server.ts`) and server modules.
 - [`conventions/data-validation.md`](./conventions/data-validation.md) — required at every untrusted boundary (form submissions, GitHub webhooks, external API responses).
 - [`conventions/unit-test.md`](./conventions/unit-test.md) — required when writing colocated unit/integration tests (`src/**/*.test.{js,ts}`).
