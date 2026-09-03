@@ -1,22 +1,12 @@
+import { bigint, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
-import {
-    bigint,
-    index,
-    pgTable,
-    text,
-    timestamp,
-    uniqueIndex,
-    uuid,
-} from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom(),
     githubId: bigint('github_id', { mode: 'number' }).notNull().unique(),
     login: text('login').notNull(),
     avatarUrl: text('avatar_url'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-        .notNull()
-        .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
         .notNull()
         .defaultNow()
@@ -32,9 +22,7 @@ export const sessions = pgTable(
             .references(() => users.id, { onDelete: 'cascade' }),
         secretHash: text('secret_hash').notNull(),
         expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-        createdAt: timestamp('created_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => [
         uniqueIndex('sessions_secret_hash_idx').on(table.secretHash),
