@@ -62,8 +62,7 @@
             "*": "ask",
             "src/*": "allow",
             "static/*": "allow",
-            "tests/*": "allow",
-            ".agents/skills/*": "allow"
+            "tests/*": "allow"
         },
         "skill": {
             "*": "ask",
