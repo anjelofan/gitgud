@@ -4,7 +4,7 @@ Conventions for `$lib/server/db` and the Drizzle schema. The `drizzle-orm-best-p
 
 ## Layout
 
-- Schema files live in `src/lib/server/db/schema/` (the `schema` entry of [`../../../../drizzle.config.js`](../../../../drizzle.config.js)); `schema/index.js` re-exports them.
+- Schema files live in `src/lib/server/db/schema/` (the `schema` entry of [`../../../../drizzle.config.js`](../../../../drizzle.config.js)); `schema/index.js` re-exports them. Each schema file exports capitalized `$inferSelect` row-type aliases (e.g. `export type User = typeof users.$inferSelect;`) so components can type props as `Pick<schema.User, ...>` — see [`docs/conventions/code-organization.md`](../../../docs/conventions/code-organization.md).
 - Generated migrations land in `drizzle/` and are append-only.
 - The app imports the singleton `db` from [`./index.ts`](./index.ts); never construct new `Pool`s or `drizzle` instances elsewhere.
 
