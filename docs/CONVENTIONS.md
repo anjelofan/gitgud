@@ -6,6 +6,8 @@ This file routes to the project-specific convention documents. Generic library c
 
 Style conventions are machine-enforced by [`eslint.config.js`](../eslint.config.js) and Prettier. Treat `pnpm lint` and `pnpm fmt` failures as MUSTs. Never disable a rule ad hoc to make code pass; if a rule is genuinely wrong for the project, propose changing the config instead.
 
+The ESLint configuration is itself a convention document: read it before generating or modifying source files, and write new code _against_ its rules rather than fixing violations afterwards. Many of its rules diverge from common ecosystem style (`require-unicode-regexp`, `no-undefined`, `curly: multi`, `no-negated-condition`, `func-style: declaration`) — do not rely on prior habits. Import ordering (`imsort`) is not derivable by hand: finish every new or modified file with `pnpm es:fix` followed by `pnpm lint:es`, not a task-end cleanup.
+
 ## Topic Documents
 
 Read the topic document that applies to the current task before writing code.
