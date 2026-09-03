@@ -48,6 +48,10 @@ export const githubTokens = pgTable('github_tokens', {
         .$onUpdateFn(() => sql`now()`),
 });
 
+export type User = typeof users.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
+export type GithubTokens = typeof githubTokens.$inferSelect;
+
 export const usersRelations = relations(users, ({ many, one }) => ({
     sessions: many(sessions),
     githubTokens: one(githubTokens, {
