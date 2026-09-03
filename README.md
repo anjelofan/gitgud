@@ -35,7 +35,7 @@ Environment variables (see [`.env.example`](.env.example)):
 
 - `DATABASE_URL` (required) — PostgreSQL connection string.
 - `GITHUB_API_BASE` (optional) — override the GitHub API base URL; tests point this at the fake GitHub server under `tests/fake-github/` on `http://localhost:4001`.
-- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export; leave unset to disable.
+- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export; leave unset to disable. In development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
 
 ## Scripts
 
