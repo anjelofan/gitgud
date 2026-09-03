@@ -27,3 +27,5 @@ function initConnection() {
 const pool = initConnection();
 
 export const db = drizzle({ client: pool, schema });
+export type DbConnection = typeof db;
+export * as schema from './schema';
