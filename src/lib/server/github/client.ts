@@ -1,8 +1,9 @@
+import assert from 'node:assert/strict';
+
 import * as v from 'valibot';
 import { SpanStatusCode } from '@opentelemetry/api';
 
 import { env } from '$env/dynamic/private';
-
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
@@ -13,9 +14,28 @@ const tracer = Tracer.byName(SERVICE_NAME);
 const DEFAULT_API_BASE = 'https://api.github.com';
 const DEFAULT_OAUTH_BASE = 'https://github.com';
 
+function resolveFakeGitHubPort() {
+    const port = env.FAKE_GITHUB_PORT;
+    try {
+        assert(
+            typeof port === 'string' &&
+                port.length > 0 &&
+                Number.isInteger(Number(port)) &&
+                Number(port) > -1,
+            'FAKE_GITHUB_PORT must be set.',
+        );
+    } catch {
+        return null;
+    }
+    return Number(port);
+}
+
 /** API base for REST calls; OAuth endpoints follow the same override so the fake GitHub server intercepts everything. */
-export const apiBase = env.GITHUB_API_BASE ?? DEFAULT_API_BASE;
-export const oauthBase = env.GITHUB_API_BASE ?? DEFAULT_OAUTH_BASE;
+const FAKE_GITHUB_PORT = resolveFakeGitHubPort();
+export const apiBase =
+    FAKE_GITHUB_PORT === null ? DEFAULT_API_BASE : `http://localhost:${FAKE_GITHUB_PORT}`;
+export const oauthBase =
+    FAKE_GITHUB_PORT === null ? DEFAULT_OAUTH_BASE : `http://localhost:${FAKE_GITHUB_PORT}`;
 
 const MAX_ERROR_BODY_LENGTH = 512;
 

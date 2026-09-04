@@ -9,7 +9,8 @@ Conventions for the colocated Vitest suite (`src/**/*.test.{js,ts}`, run in the 
 
 ## Boundaries
 
-- Tests must never hit the real GitHub API. The GitHub client reads its base URL from `GITHUB_API_BASE`; point it at the fake GitHub server under `tests/fake-github/` (or a test double) instead.
+- Tests must never hit the real GitHub API. The GitHub client derives its base URL from `FAKE_GITHUB_PORT`: when set, it talks to the fake GitHub server under `tests/fake-github/` at `http://localhost:${FAKE_GITHUB_PORT}`; when unset, it would talk to the real API — which is why the harnesses load the committed `.env.test` and abort when `FAKE_GITHUB_PORT` is missing or invalid.
+- The vitest run starts the fake GitHub server itself (`globalSetup` in the [`vite.config.js`](../../vite.config.js) test block) on `http://localhost:${FAKE_GITHUB_PORT}`; do not start a second instance.
 - The `vite.config.js` test configuration excludes `tests/**` — do not place unit tests there.
 
 ## Running
