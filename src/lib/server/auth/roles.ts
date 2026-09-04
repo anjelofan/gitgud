@@ -26,20 +26,20 @@ export async function resolveRole(token: string | null, org: string | null): Pro
             { token },
         );
     } catch (error) {
-        if (error instanceof GithubApiError && error.status === 404) {
-            logger.debug('user is not a member of the organization', { 'github.org': org });
-            return null;
-        }
-
-        // The app may lack the organization members permission; role resolution
-        // is best-effort context and must not take down the request.
-        if (error instanceof GithubApiError && error.status === 403) {
-            logger.warn('organization membership not accessible', {
-                'github.org': org,
-                'github.response.status_code': error.status,
-            });
-            return null;
-        }
+        if (error instanceof GithubApiError)
+            switch (error.status) {
+                case 403:
+                    logger.warn('organization membership not accessible', {
+                        'github.org': org,
+                        'github.response.status_code': error.status,
+                    });
+                    return null;
+                case 404:
+                    logger.debug('user is not a member of the organization', { 'github.org': org });
+                    return null;
+                default:
+                    throw error;
+            }
 
         throw error;
     }

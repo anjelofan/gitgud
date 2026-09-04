@@ -65,7 +65,7 @@ export function decryptToken(encoded: string) {
     ]).toString('utf8');
 }
 
-export function constantTimeEqual(a: string, b: string): boolean {
+export function constantTimeEqual(a: string, b: string) {
     const aBytes = Buffer.from(a, 'utf8');
     const bBytes = Buffer.from(b, 'utf8');
     return aBytes.length === bBytes.length && timingSafeEqual(aBytes, bBytes);
