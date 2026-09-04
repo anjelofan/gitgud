@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/postgres
-      GITHUB_API_BASE: http://localhost:4001
+      FAKE_GITHUB_PORT: 4001
     services:
       postgres:
         image: postgres:17-alpine

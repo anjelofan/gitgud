@@ -14,6 +14,8 @@ Commands (see [`package.json`](package.json)):
 - **Unit/integration tests**: colocated with source files as `src/**/*.test.{js,ts}`, run in the node environment. Configuration lives in the `test` block of [`vite.config.js`](vite.config.js), which excludes `tests/**` (the end-to-end domain). Conventions: [`docs/conventions/unit-test.md`](docs/conventions/unit-test.md).
 - **End-to-end tests**: `tests/`, configured in [`playwright.config.js`](playwright.config.js). Conventions: [`tests/AGENTS.md`](tests/AGENTS.md).
 
+The fake GitHub server (`tests/fake-github/`) stands in for the real API during tests. The committed [`.env.test`](.env.test) supplies its port (`FAKE_GITHUB_PORT`) and the fake OAuth credentials; the harnesses load it automatically and abort when `FAKE_GITHUB_PORT` is missing or invalid — no shell setup needed. The app itself uses the real GitHub API when the variable is unset.
+
 ## Artifacts
 
 - `vitest-results/.last-run.json` — machine-readable Vitest results, rewritten by the JSON reporter on every run.

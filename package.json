@@ -22,7 +22,7 @@
         "test:e2e": "playwright test",
         "test:e2e:setup": "playwright install chromium",
         "test:unit": "vitest run",
-        "db:generate": "drizzle-kit generate",
+        "db:generate": "drizzle-kit generate --name",
         "db:migrate": "drizzle-kit migrate",
         "db:studio": "drizzle-kit studio",
         "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up --wait",

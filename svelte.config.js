@@ -4,6 +4,7 @@ import adapter from '@sveltejs/adapter-node';
 const config = {
     kit: {
         adapter: adapter(),
+        alias: { $tests: './tests' },
         experimental: {
             tracing: { server: true },
             instrumentation: { server: true },

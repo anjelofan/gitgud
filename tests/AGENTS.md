@@ -4,12 +4,13 @@ Conventions for the Playwright suite in `tests/` (configured in [`../playwright.
 
 ## GitHub Boundary
 
-Tests MUST never hit the real GitHub API. The GitHub client reads its base URL from `GITHUB_API_BASE` (falling back to the real API when unset); tests point it at the fake GitHub server under `tests/fake-github/`. Never bypass this boundary — no test may construct a client against the real API, even behind a skip.
+Tests MUST never hit the real GitHub API. The GitHub client derives its base URL from `FAKE_GITHUB_PORT`: set, it talks to the fake GitHub server under `tests/fake-github/` at `http://localhost:${FAKE_GITHUB_PORT}`; unset, it falls back to the real API. The harnesses load the committed `.env.test` and abort when `FAKE_GITHUB_PORT` is missing or invalid. Never bypass this boundary — no test may construct a client against the real API, even behind a skip.
 
 ## Runtime Assumptions
 
 - `playwright.config.js` assumes `pnpm build` has been run before `pnpm test:e2e`; the web server command is `pnpm preview`, which serves the previous build output. CI must run `pnpm build` first.
 - Locally, `reuseExistingServer` is enabled outside CI: if something is already listening on port `4173`, Playwright reuses it instead of starting a fresh server. Stale build output therefore yields stale test results — rebuild when in doubt.
+- The Playwright run also starts the fake GitHub server on `http://localhost:${FAKE_GITHUB_PORT}` (`tests/fake-github/start.js`), and the same reuse rule applies: a foreign process already bound to `${FAKE_GITHUB_PORT}` will be adopted with whatever fixture state it has — kill it when in doubt.
 
 ## Test-Writing Style
 

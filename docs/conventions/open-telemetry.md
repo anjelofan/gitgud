@@ -2,6 +2,10 @@
 
 gitgud emits traces and logs through the `Logger` and `Tracer` classes in `$lib/server/telemetry/` (see [`logger.ts`](../../src/lib/server/telemetry/logger.ts) and [`tracer.ts`](../../src/lib/server/telemetry/tracer.ts)). `console.*` is lint-warned; `logger.*` is the project's output channel.
 
+## Dev Output
+
+Log records are exported via OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. When it is unset and `NODE_ENV !== 'production'`, [`src/instrumentation.server.js`](../../src/instrumentation.server.js) attaches a console exporter instead, so `logger.*` output is visible in the development terminal. Production without an OTLP endpoint stays silent by contract; spans are only ever exported via OTLP.
+
 ## Service Naming
 
 Use hierarchical dot-separated names: `module.submodule.service`.

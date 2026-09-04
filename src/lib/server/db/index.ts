@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
-import { env } from 'node:process';
 
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
 import { building } from '$app/env';
+import { env } from '$env/dynamic/private';
+
+import * as schema from './schema';
 
 function initConnection() {
     if (!building)
         assert(
-            typeof env.DATABASE_URL !== 'undefined' || env.DATABASE_URL === '',
+            typeof env.DATABASE_URL !== 'undefined' && env.DATABASE_URL !== '',
             'DATABASE_URL must be set.',
         );
 
@@ -24,5 +26,6 @@ function initConnection() {
 
 const pool = initConnection();
 
-// TODO: Add schema to enable relational queries
-export const db = drizzle({ client: pool });
+export const db = drizzle({ client: pool, schema });
+export type DbConnection = typeof db;
+export * as schema from './schema';
