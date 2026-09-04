@@ -5,13 +5,9 @@ import { constantTimeEqual } from '$lib/server/auth/crypto';
 import { createSession, SESSION_COOKIE, upsertGithubUser } from '$lib/server/auth/sessions';
 import { db } from '$lib/server/db';
 import { dev } from '$app/environment';
-import {
-    exchangeCode,
-    getUser,
-    OAUTH_STATE_COOKIE,
-    type OAuthTokenResponse,
-} from '$lib/server/github/oauth';
+import { exchangeCode, getUser, OAUTH_STATE_COOKIE } from '$lib/server/github/oauth';
 import { Logger } from '$lib/server/telemetry/logger';
+import type { OAuthTokenResponse } from '$lib/server/github/contracts';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
 const SERVICE_NAME = 'routes.auth.callback';

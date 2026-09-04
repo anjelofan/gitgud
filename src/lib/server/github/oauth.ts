@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import { createHash, randomBytes } from 'node:crypto';
 
-import * as v from 'valibot';
-
 import { building } from '$app/env';
 import { env } from '$env/dynamic/private';
 
 import { githubApi, oauthBase, oauthRequest } from './client';
+import { GithubUserSchema, OAuthTokenResponseSchema } from './contracts';
 
 function initCredentials() {
     const clientId = env.GITHUB_APP_CLIENT_ID;
@@ -27,23 +26,6 @@ function initCredentials() {
 const { clientId, clientSecret } = initCredentials();
 
 export const OAUTH_STATE_COOKIE = 'github_oauth_state';
-
-export const GithubUserSchema = v.object({
-    id: v.number(),
-    login: v.string(),
-    avatar_url: v.nullable(v.string()),
-});
-export type GithubUser = v.InferOutput<typeof GithubUserSchema>;
-
-export const OAuthTokenResponseSchema = v.object({
-    access_token: v.string(),
-    expires_in: v.number(),
-    refresh_token: v.string(),
-    refresh_token_expires_in: v.number(),
-    token_type: v.literal('bearer'),
-    scope: v.string(),
-});
-export type OAuthTokenResponse = v.InferOutput<typeof OAuthTokenResponseSchema>;
 
 export function createState(): string {
     return randomBytes(32).toString('base64url');

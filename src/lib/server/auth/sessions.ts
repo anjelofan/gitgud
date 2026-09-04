@@ -6,12 +6,9 @@ import { and, eq, gt, sql } from 'drizzle-orm';
 import type { DbConnection } from '$lib/server/db';
 import { decryptToken, encryptToken, hashSessionSecret } from '$lib/server/auth/crypto';
 import { githubTokens, sessions, users } from '$lib/server/db/schema';
-import {
-    type GithubUser,
-    type OAuthTokenResponse,
-    refreshAccessToken,
-} from '$lib/server/github/oauth';
+import type { GithubUser, OAuthTokenResponse } from '$lib/server/github/contracts';
 import { Logger } from '$lib/server/telemetry/logger';
+import { refreshAccessToken } from '$lib/server/github/oauth';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
 const SERVICE_NAME = 'auth.sessions';
