@@ -1,16 +1,10 @@
-import * as v from 'valibot';
-
 import { GithubApiError, githubApi } from '$lib/server/github/client';
 import { Logger } from '$lib/server/telemetry/logger';
 
+import { type OrgMembership, OrgMembershipSchema } from './contracts';
+
 const SERVICE_NAME = 'auth.roles';
 const logger = Logger.byName(SERVICE_NAME);
-
-const OrgMembershipSchema = v.object({
-    state: v.picklist(['active', 'pending']),
-    role: v.picklist(['admin', 'member']),
-});
-export type OrgMembership = v.InferOutput<typeof OrgMembershipSchema>;
 
 export type Role =
     { kind: 'teacher'; source: 'org-owner' } | { kind: 'student'; source: 'roster-entry' };
