@@ -36,7 +36,6 @@ Environment variables (see [`.env.example`](.env.example)):
 - `DATABASE_URL` (required) — PostgreSQL connection string.
 - `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `SESSION_SECRET` (required) — GitHub app credentials
 - `FAKE_GITHUB_PORT` (optional) — for testing; set this to point the tests to a fake GitHub server at `http://localhost:${FAKE_GITHUB_PORT}`.
-- `GITHUB_ORG` (optional) — GitHub org used for teacher-role resolution until the classroom feature supplies org context per classroom; leave unset to resolve no role.
 - `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export; leave unset to disable. In development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
 
 ## Scripts

@@ -12,7 +12,6 @@ import { resolveFakeGitHubPort } from './tests/fake-github/port.ts';
 if (process.env.VITEST === 'true') {
     loadEnvFile({ path: '.env.test' });
     resolveFakeGitHubPort();
-    delete process.env.GITHUB_ORG;
 }
 
 export default defineConfig({
