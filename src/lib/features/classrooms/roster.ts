@@ -18,6 +18,8 @@ function parseCsvRecord(record: string): string[] {
             index += 1;
         } else if (quoted && char === '"') {
             quoted = false;
+        } else if (quoted) {
+            field += char;
         } else if (char === '"') {
             if (field !== '') throw new Error('unexpected quote inside unquoted CSV field');
             quoted = true;
