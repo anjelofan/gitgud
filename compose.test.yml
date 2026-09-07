@@ -14,6 +14,13 @@ services:
         published: 5433
         target: 5432
         protocol: tcp
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d gitgud_test']
+      interval: 30s
+      timeout: 2s
+      retries: 3
+      start_period: 15s
+      start_interval: 1s
 
 networks:
   test-database:
