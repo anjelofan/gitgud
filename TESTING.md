@@ -21,8 +21,7 @@ The fake GitHub server (`tests/fake-github/`) stands in for the real API during 
 Tests never touch the development database. Both harnesses (Vitest and the
 Playwright preview server) get `DATABASE_URL` from [`.env.test`](.env.test),
 which points at a dedicated, disposable PostgreSQL container on port 5433
-([`compose.test.yml`](compose.test.yml)) — separate from the dev database on
-5432.
+([`compose.test.yml`](compose.test.yml)) — separate from the dev database on 5432.
 
 ```sh
 pnpm docker:test          # start the container, wait for health, migrate
