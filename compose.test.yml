@@ -8,14 +8,14 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: gitgud_test
+      POSTGRES_DB: test
     ports:
       - host_ip: 127.0.0.1
         published: 5433
         target: 5432
         protocol: tcp
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d gitgud_test']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d test']
       interval: 30s
       timeout: 2s
       retries: 3
