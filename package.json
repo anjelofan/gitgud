@@ -25,7 +25,7 @@
         "db:generate": "drizzle-kit generate --name",
         "db:migrate": "drizzle-kit migrate",
         "db:studio": "drizzle-kit studio",
-        "db:test:migrate": "DATABASE_URL=postgresql://postgres:password@localhost:5433/gitgud_test pnpm db:migrate",
+        "db:test:migrate": "DATABASE_URL=postgresql://postgres:password@localhost:5433/test pnpm db:migrate",
         "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up --wait",
         "docker:dev:down": "docker compose -f compose.yml -f compose.dev.yml down --remove-orphans",
         "docker:test": "docker compose -f compose.test.yml up --wait && pnpm db:test:migrate",
