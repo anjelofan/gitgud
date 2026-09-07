@@ -1,21 +1,23 @@
-name: gitgud
+name: gitgud-test
 
 services:
   postgres:
-    restart: always
+    image: postgres:17-alpine
+    tmpfs:
+      - /var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
+      POSTGRES_DB: test
     ports:
       - host_ip: 127.0.0.1
-        published: 5432
+        published: 5433
         target: 5432
         protocol: tcp
     networks:
-      - dev-database
+      - test-database
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d test']
       interval: 30s
       timeout: 2s
       retries: 3
@@ -23,8 +25,8 @@ services:
       start_interval: 1s
 
 networks:
-  dev-database:
+  test-database:
     external: false
     driver: bridge
-    name: 'dev-database'
+    name: 'test-database'
     internal: false

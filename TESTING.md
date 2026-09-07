@@ -16,6 +16,28 @@ Commands (see [`package.json`](package.json)):
 
 The fake GitHub server (`tests/fake-github/`) stands in for the real API during tests. The committed [`.env.test`](.env.test) supplies its port (`FAKE_GITHUB_PORT`) and the fake OAuth credentials; the harnesses load it automatically and abort when `FAKE_GITHUB_PORT` is missing or invalid — no shell setup needed. The app itself uses the real GitHub API when the variable is unset.
 
+## Local Test Database
+
+Tests never touch the development database. Both harnesses (Vitest and the
+Playwright preview server) get `DATABASE_URL` from [`.env.test`](.env.test),
+which points at a dedicated, disposable PostgreSQL container on port 5433
+([`compose.test.yml`](compose.test.yml)) — separate from the dev database on 5432.
+
+```sh
+pnpm docker:test          # start the container, wait for health, migrate
+pnpm docker:test:down     # stop and discard it
+```
+
+The container stores data in memory (tmpfs): every `pnpm docker:test:down`
+wipes it, and every fresh `pnpm docker:test` starts empty and re-applies
+migrations. After changing the schema while the container is up, re-run
+`pnpm db:test:migrate`.
+
+`pnpm test:unit` truncates tables in this database (`TRUNCATE users CASCADE`
+in `src/lib/server/auth/sessions.test.ts`) — never point `DATABASE_URL` at a
+database holding data you care about. CI supplies its own `DATABASE_URL` for
+its service container; the committed value only applies to local runs.
+
 ## Artifacts
 
 - `vitest-results/.last-run.json` — machine-readable Vitest results, rewritten by the JSON reporter on every run.
