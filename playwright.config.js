@@ -12,7 +12,6 @@ const testEnv = {
     SESSION_SECRET: process.env.SESSION_SECRET,
     GITHUB_APP_CLIENT_ID: process.env.GITHUB_APP_CLIENT_ID,
     GITHUB_APP_CLIENT_SECRET: process.env.GITHUB_APP_CLIENT_SECRET,
-    DATABASE_URL: process.env.DATABASE_URL,
 };
 
 export default defineConfig({
