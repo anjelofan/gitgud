@@ -1,0 +1,23 @@
+name: gitgud-test
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    tmpfs:
+      - /var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gitgud_test
+    ports:
+      - host_ip: 127.0.0.1
+        published: 5433
+        target: 5432
+        protocol: tcp
+
+networks:
+  test-database:
+    external: false
+    driver: bridge
+    name: 'test-database'
+    internal: false
