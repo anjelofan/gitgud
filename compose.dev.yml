@@ -14,6 +14,13 @@ services:
         protocol: tcp
     networks:
       - dev-database
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 30s
+      timeout: 2s
+      retries: 3
+      start_period: 15s
+      start_interval: 1s
 
 networks:
   dev-database:
