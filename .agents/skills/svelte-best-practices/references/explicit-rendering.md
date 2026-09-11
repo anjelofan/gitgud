@@ -6,11 +6,11 @@ Use an explicit condition when a rendered value can be absent, empty, zero, or o
 <!-- BAD: Truthiness Hides Valid Values -->
 
 <script lang="ts">
-	let activeUsers = $state(0);
+    let activeUsers = $state(0);
 </script>
 
 {#if activeUsers}
-	<p>{activeUsers} active users</p>
+    <p>{activeUsers} active users</p>
 {/if}
 ```
 
@@ -18,11 +18,11 @@ Use an explicit condition when a rendered value can be absent, empty, zero, or o
 <!-- GOOD: The Rendering Rule Names the Actual Condition -->
 
 <script lang="ts">
-	let activeUsers = $state(0);
+    let activeUsers = $state(0);
 </script>
 
 {#if activeUsers >= 0}
-	<p>{activeUsers} active users</p>
+    <p>{activeUsers} active users</p>
 {/if}
 ```
 

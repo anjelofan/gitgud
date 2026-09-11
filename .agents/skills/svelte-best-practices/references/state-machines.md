@@ -8,46 +8,46 @@ Keep the `const enum` and its state contracts in a TypeScript module. A Svelte c
 // lobby-state.ts
 // GOOD: one discriminant determines every valid state.
 export const enum LobbyStatus {
-	Idle = 0,
-	Joining = 1,
-	Active = 2,
-	Failed = 3,
+    Idle = 0,
+    Joining = 1,
+    Active = 2,
+    Failed = 3,
 }
 
 interface IdleLobby {
-	status: LobbyStatus.Idle;
+    status: LobbyStatus.Idle;
 }
 
 interface JoiningLobby {
-	status: LobbyStatus.Joining;
+    status: LobbyStatus.Joining;
 }
 
 interface ActiveLobby {
-	status: LobbyStatus.Active;
-	lobbyId: string;
+    status: LobbyStatus.Active;
+    lobbyId: string;
 }
 
 interface FailedLobby {
-	status: LobbyStatus.Failed;
-	message: string;
+    status: LobbyStatus.Failed;
+    message: string;
 }
 
 export type LobbyState = IdleLobby | JoiningLobby | ActiveLobby | FailedLobby;
 
 export function getLobbyLabel(state: LobbyState) {
-	switch (state.status) {
-		case LobbyStatus.Idle:
-			return 'Ready to join';
-		case LobbyStatus.Joining:
-			return 'Joining';
-		case LobbyStatus.Active:
-			return `Connected to ${state.lobbyId}`;
-		case LobbyStatus.Failed:
-			return state.message;
-		default: {
-			throw new Error('unexpected lobby state');
-		}
-	}
+    switch (state.status) {
+        case LobbyStatus.Idle:
+            return 'Ready to join';
+        case LobbyStatus.Joining:
+            return 'Joining';
+        case LobbyStatus.Active:
+            return `Connected to ${state.lobbyId}`;
+        case LobbyStatus.Failed:
+            return state.message;
+        default: {
+            throw new Error('unexpected lobby state');
+        }
+    }
 }
 ```
 
@@ -56,9 +56,9 @@ export function getLobbyLabel(state: LobbyState) {
 
 <!-- Lobby.svelte -->
 <script lang="ts">
-	import { LobbyStatus, type LobbyState } from './lobby-state';
+    import { LobbyStatus, type LobbyState } from './lobby-state';
 
-	let lobby = $state<LobbyState>({ status: LobbyStatus.Idle });
+    let lobby = $state<LobbyState>({ status: LobbyStatus.Idle });
 </script>
 ```
 
@@ -66,8 +66,8 @@ export function getLobbyLabel(state: LobbyState) {
 <!-- BAD: Parallel State Can Contradict Itself -->
 
 <script lang="ts">
-	let isJoining = $state(false);
-	let lobbyId = $state<string | undefined>();
-	let failureMessage = $state<string | undefined>();
+    let isJoining = $state(false);
+    let lobbyId = $state<string | undefined>();
+    let failureMessage = $state<string | undefined>();
 </script>
 ```

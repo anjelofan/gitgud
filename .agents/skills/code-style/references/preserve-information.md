@@ -5,17 +5,17 @@ A lower layer must preserve information that a caller can use to make policy dec
 ```typescript
 // BAD: the transport discards continuation state.
 async function fetchItems() {
-	const page = await provider.fetchPage();
-	return page.items;
+    const page = await provider.fetchPage();
+    return page.items;
 }
 
 // GOOD: the transport returns the complete validated page.
 async function fetchPage(cursor?: string) {
-	const response = await provider.fetchPage(cursor);
-	return validatePage({
-		items: response.items,
-		nextCursor: response.nextCursor,
-	});
+    const response = await provider.fetchPage(cursor);
+    return validatePage({
+        items: response.items,
+        nextCursor: response.nextCursor,
+    });
 }
 ```
 

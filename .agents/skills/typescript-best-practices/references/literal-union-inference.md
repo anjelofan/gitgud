@@ -5,9 +5,9 @@ Use a `const enum` when a named closed primitive state set needs to survive beyo
 ```typescript
 // BAD: Infer a State Setter From Only Its Initial Member
 const enum RequestStatus {
-	Idle = 'idle',
-	Loading = 'loading',
-	Error = 'error',
+    Idle = 'idle',
+    Loading = 'loading',
+    Error = 'error',
 }
 
 const [state, setState] = useState(RequestStatus.Idle);
@@ -19,9 +19,9 @@ setState(RequestStatus.Loading);
 ```typescript
 // GOOD: Declare the Intended State Set at the Inference Boundary
 const enum RequestStatus {
-	Idle = 'idle',
-	Loading = 'loading',
-	Error = 'error',
+    Idle = 'idle',
+    Loading = 'loading',
+    Error = 'error',
 }
 
 const [state, setState] = useState<RequestStatus>(RequestStatus.Idle);

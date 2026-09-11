@@ -5,14 +5,14 @@ Remount a stateful component with `{#key}` when an identity change requires fres
 ```svelte
 <!-- BAD: an effect manually reconstructs a state lifetime. -->
 <script lang="ts">
-	$effect(() => {
-		if (typeof categoryId !== 'undefined') selectedIds = new Set();
-	});
+    $effect(() => {
+        if (typeof categoryId !== 'undefined') selectedIds = new Set();
+    });
 </script>
 
 <!-- GOOD: a category change recreates ItemList and its local state -->
 {#key categoryId}
-	<ItemList {items} />
+    <ItemList {items} />
 {/key}
 ```
 

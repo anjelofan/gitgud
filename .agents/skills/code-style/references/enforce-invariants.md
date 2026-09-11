@@ -5,32 +5,32 @@ Choose representations that exclude invalid combinations. Do not represent one d
 ```typescript
 // BAD: contradictory combinations are representable.
 interface RequestFlags<Data> {
-	isLoading: boolean;
-	data?: Data;
-	error?: Error;
+    isLoading: boolean;
+    data?: Data;
+    error?: Error;
 }
 
 // GOOD: each state has one valid shape.
 const enum RequestStatus {
-	Idle = 'idle',
-	Loading = 'loading',
-	Success = 'success',
-	Failure = 'failure',
+    Idle = 'idle',
+    Loading = 'loading',
+    Success = 'success',
+    Failure = 'failure',
 }
 
 interface IdleState {
-	status: RequestStatus.Idle;
+    status: RequestStatus.Idle;
 }
 interface LoadingState {
-	status: RequestStatus.Loading;
+    status: RequestStatus.Loading;
 }
 interface SuccessState<Data> {
-	status: RequestStatus.Success;
-	data: Data;
+    status: RequestStatus.Success;
+    data: Data;
 }
 interface FailureState {
-	status: RequestStatus.Failure;
-	error: Error;
+    status: RequestStatus.Failure;
+    error: Error;
 }
 
 type RequestState<Data> = IdleState | LoadingState | SuccessState<Data> | FailureState;

@@ -28,11 +28,11 @@ Features are isolated siblings and do not import one another. Callers and orches
 Read the reference that matches the ownership decision being changed.
 
 1. Derive the directory tree from the production import graph.
-   - [Recursively place every private dependency beneath its narrowest owning consumer.](./references/recursive-ownership.md)
-   - [Give each public boundary an operational entry and keep private imports inside that boundary.](./references/entries-and-import-boundaries.md)
+    - [Recursively place every private dependency beneath its narrowest owning consumer.](./references/recursive-ownership.md)
+    - [Give each public boundary an operational entry and keep private imports inside that boundary.](./references/entries-and-import-boundaries.md)
 2. Broaden ownership only when the consumer set proves it is necessary.
-   - [Place shared behavior at its lowest common owner before promoting it across features.](./references/ownership-promotion.md)
-   - [Admit an independently buildable package only for a real dependency, runtime, build, or deployment closure.](./references/package-admission.md)
+    - [Place shared behavior at its lowest common owner before promoting it across features.](./references/ownership-promotion.md)
+    - [Admit an independently buildable package only for a real dependency, runtime, build, or deployment closure.](./references/package-admission.md)
 3. Preserve behavior and evidence while changing structure.
-   - [Apply the ownership analysis to a fixed point and audit the resulting import graph.](./references/refactor-and-review.md)
-   - [Collocate unit tests with their narrowest leaf and hoist cross-boundary scenarios to their composing owner.](./references/test-placement.md)
+    - [Apply the ownership analysis to a fixed point and audit the resulting import graph.](./references/refactor-and-review.md)
+    - [Collocate unit tests with their narrowest leaf and hoist cross-boundary scenarios to their composing owner.](./references/test-placement.md)

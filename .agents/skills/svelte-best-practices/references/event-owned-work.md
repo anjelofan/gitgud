@@ -8,18 +8,18 @@ Do not toggle state and use `$effect` to perform navigation, analytics, or a mut
 <!-- BAD: React to an Event Indirectly -->
 
 <script lang="ts">
-	let submitted = $state(false);
+    let submitted = $state(false);
 
-	$effect(() => {
-		if (submitted) {
-			sendAnalytics('form_submit');
-			goto('/success');
-		}
-	});
+    $effect(() => {
+        if (submitted) {
+            sendAnalytics('form_submit');
+            goto('/success');
+        }
+    });
 
-	function handleSubmit() {
-		submitted = true;
-	}
+    function handleSubmit() {
+        submitted = true;
+    }
 </script>
 ```
 
@@ -27,9 +27,9 @@ Do not toggle state and use `$effect` to perform navigation, analytics, or a mut
 <!-- GOOD: The Event Owns Its Consequences -->
 
 <script lang="ts">
-	function handleSubmit() {
-		sendAnalytics('form_submit');
-		goto('/success');
-	}
+    function handleSubmit() {
+        sendAnalytics('form_submit');
+        goto('/success');
+    }
 </script>
 ```

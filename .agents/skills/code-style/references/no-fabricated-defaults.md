@@ -5,12 +5,12 @@ Do not replace missing required information with an invented value, arbitrary fi
 ```typescript
 // BAD: missing data becomes plausible but false data.
 const timeout = configuration.timeout ?? 30;
-const selected = items.find(item => item.id === id) ?? items[0];
+const selected = items.find((item) => item.id === id) ?? items[0];
 
 // GOOD: absence remains part of the decision.
 if (typeof configuration.timeout === 'undefined') return configurationMissing('timeout');
 
-const selectedItem = items.find(item => item.id === id);
+const selectedItem = items.find((item) => item.id === id);
 if (typeof selectedItem === 'undefined') throw new Error(`Selected item must exist: ${id}`);
 ```
 

@@ -8,7 +8,7 @@ Do not use raw `getContext` and `setContext`. A required context getter must fai
 import { createContext } from 'svelte';
 
 interface WorkspaceSession {
-	refresh(): Promise<void>;
+    refresh(): Promise<void>;
 }
 
 // GOOD: a workspace subtree owns one capability shared at several depths.

@@ -8,10 +8,10 @@ Use runes for state owned by the component that reads and changes it. Do not int
         initialTitle: string;
     }
 
-	const { initialTitle }: Props = $props();
+    const { initialTitle }: Props = $props();
 
-	// GOOD: this editor owns its draft until it unmounts.
-	let title = $state(initialTitle);
+    // GOOD: this editor owns its draft until it unmounts.
+    let title = $state(initialTitle);
 </script>
 ```
 

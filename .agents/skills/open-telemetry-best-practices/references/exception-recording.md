@@ -86,8 +86,8 @@ The JavaScript trace API's `recordException` method creates an exception span ev
 ```typescript
 import { logs, SeverityNumber } from '@opentelemetry/api-logs';
 import {
-	ATTR_EXCEPTION_STACKTRACE,
-	ATTR_HTTP_RESPONSE_STATUS_CODE,
+    ATTR_EXCEPTION_STACKTRACE,
+    ATTR_HTTP_RESPONSE_STATUS_CODE,
 } from '@opentelemetry/semantic-conventions';
 
 const logger = logs.getLogger('com.acme.orders');
@@ -99,26 +99,26 @@ This optional JavaScript pattern is valid only when every call site owns immedia
 
 ```typescript
 class ApiResponseError extends Error {
-	name = 'ApiResponseError';
+    name = 'ApiResponseError';
 
-	constructor(public readonly code: number) {
-		super(`API response returned status ${code}`);
-		this.name = 'ApiResponseError';
-	}
+    constructor(public readonly code: number) {
+        super(`API response returned status ${code}`);
+        this.name = 'ApiResponseError';
+    }
 
-	static throwNew(code: number): never {
-		const error = new ApiResponseError(code);
-		logger.emit({
-			eventName: 'api.request.exception',
-			severityNumber: SeverityNumber.WARN,
-			body: 'API request failed',
-			exception: error,
-			attributes: {
-				[ATTR_HTTP_RESPONSE_STATUS_CODE]: error.code,
-			},
-		});
-		throw error;
-	}
+    static throwNew(code: number): never {
+        const error = new ApiResponseError(code);
+        logger.emit({
+            eventName: 'api.request.exception',
+            severityNumber: SeverityNumber.WARN,
+            body: 'API request failed',
+            exception: error,
+            attributes: {
+                [ATTR_HTTP_RESPONSE_STATUS_CODE]: error.code,
+            },
+        });
+        throw error;
+    }
 }
 ```
 
@@ -130,14 +130,14 @@ This minimal fragment assumes `error` is an `Error` caught by the owning boundar
 
 ```typescript
 logger.emit({
-	eventName: 'profile.load.exception',
-	severityNumber: SeverityNumber.WARN,
-	body: 'Profile loading failed',
-	exception: error,
-	attributes: {
-		[ATTR_EXCEPTION_STACKTRACE]: formatCompleteExceptionChain(error),
-		'com.acme.operation.phase': 'profile_load',
-	},
+    eventName: 'profile.load.exception',
+    severityNumber: SeverityNumber.WARN,
+    body: 'Profile loading failed',
+    exception: error,
+    attributes: {
+        [ATTR_EXCEPTION_STACKTRACE]: formatCompleteExceptionChain(error),
+        'com.acme.operation.phase': 'profile_load',
+    },
 });
 
 throw error;
@@ -149,13 +149,13 @@ This recovery boundary supplies the exception because no outer boundary will rec
 
 ```typescript
 logger.emit({
-	eventName: 'cache.lookup.exception',
-	severityNumber: SeverityNumber.WARN,
-	body: 'Cache lookup recovered with defaults',
-	exception: error,
-	attributes: {
-		'com.acme.recovery.action': 'use_defaults',
-	},
+    eventName: 'cache.lookup.exception',
+    severityNumber: SeverityNumber.WARN,
+    body: 'Cache lookup recovered with defaults',
+    exception: error,
+    attributes: {
+        'com.acme.recovery.action': 'use_defaults',
+    },
 });
 
 return defaultPreferences;
@@ -165,13 +165,13 @@ return defaultPreferences;
 
 ```typescript
 try {
-	return await loadProfile();
+    return await loadProfile();
 } catch (error) {
-	if (!(error instanceof ProfileUnavailableError)) throw error;
+    if (!(error instanceof ProfileUnavailableError)) throw error;
 
-	throw new OrderProfileError('Order profile is unavailable', {
-		cause: error,
-	});
+    throw new OrderProfileError('Order profile is unavailable', {
+        cause: error,
+    });
 }
 ```
 
@@ -183,18 +183,18 @@ A routine wrapper only updates its operation span and propagates the cause witho
 
 ```typescript
 const propagatedError = new OrderCreationError(
-	'Order creation failed while loading the customer profile',
-	{ cause: error },
+    'Order creation failed while loading the customer profile',
+    { cause: error },
 );
 
 logger.emit({
-	eventName: 'order.create.failure_translated',
-	severityNumber: SeverityNumber.DEBUG,
-	body: 'Failure translated for the order domain',
-	attributes: {
-		'com.acme.error.from_type': error.name,
-		'com.acme.error.to_type': propagatedError.name,
-	},
+    eventName: 'order.create.failure_translated',
+    severityNumber: SeverityNumber.DEBUG,
+    body: 'Failure translated for the order domain',
+    attributes: {
+        'com.acme.error.from_type': error.name,
+        'com.acme.error.to_type': propagatedError.name,
+    },
 });
 
 throw propagatedError;
@@ -206,15 +206,15 @@ throw propagatedError;
 
 ```typescript
 if (exceptionNeedsRecording(error)) {
-	logger.emit({
-		eventName: 'order.request.exception',
-		severityNumber: SeverityNumber.ERROR,
-		body: 'Order request failed',
-		exception: error,
-		attributes: {
-			[ATTR_EXCEPTION_STACKTRACE]: formatCompleteExceptionChain(error),
-		},
-	});
+    logger.emit({
+        eventName: 'order.request.exception',
+        severityNumber: SeverityNumber.ERROR,
+        body: 'Order request failed',
+        exception: error,
+        attributes: {
+            [ATTR_EXCEPTION_STACKTRACE]: formatCompleteExceptionChain(error),
+        },
+    });
 }
 ```
 

@@ -6,31 +6,31 @@ Do not coordinate an ordered operation by chaining `$effect` blocks through inte
 <!-- BAD: Hide an Ordered Operation in Reactive Stages -->
 
 <script lang="ts">
-	let first = $state<string | undefined>();
-	let second = $state<string | undefined>();
-	let third = $state<string | undefined>();
+    let first = $state<string | undefined>();
+    let second = $state<string | undefined>();
+    let third = $state<string | undefined>();
 
-	$effect(() => {
-		void fetchFirst().then(value => {
-			first = value;
-		});
-	});
+    $effect(() => {
+        void fetchFirst().then((value) => {
+            first = value;
+        });
+    });
 
-	$effect(() => {
-		if (typeof first !== 'undefined') {
-			void fetchSecond(first).then(value => {
-				second = value;
-			});
-		}
-	});
+    $effect(() => {
+        if (typeof first !== 'undefined') {
+            void fetchSecond(first).then((value) => {
+                second = value;
+            });
+        }
+    });
 
-	$effect(() => {
-		if (typeof second !== 'undefined') {
-			void fetchThird(second).then(value => {
-				third = value;
-			});
-		}
-	});
+    $effect(() => {
+        if (typeof second !== 'undefined') {
+            void fetchThird(second).then((value) => {
+                third = value;
+            });
+        }
+    });
 </script>
 ```
 
@@ -38,19 +38,19 @@ Do not coordinate an ordered operation by chaining `$effect` blocks through inte
 <!-- GOOD: Keep the Order in One Event-Owned Operation -->
 
 <script lang="ts">
-	interface LoadedState {
-		first: string;
-		second: string;
-		third: string;
-	}
+    interface LoadedState {
+        first: string;
+        second: string;
+        third: string;
+    }
 
-	let state = $state<LoadedState | undefined>();
+    let state = $state<LoadedState | undefined>();
 
-	async function handleLoad() {
-		const first = await fetchFirst();
-		const second = await fetchSecond(first);
-		const third = await fetchThird(second);
-		state = { first, second, third };
-	}
+    async function handleLoad() {
+        const first = await fetchFirst();
+        const second = await fetchSecond(first);
+        const third = await fetchThird(second);
+        state = { first, second, third };
+    }
 </script>
 ```

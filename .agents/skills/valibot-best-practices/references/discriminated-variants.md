@@ -4,20 +4,20 @@ Use `v.variant` for a union of objects with a literal discriminant. It dispatche
 
 ```typescript
 const enum ResponseStatus {
-	Success = 'success',
-	Failed = 'failed',
+    Success = 'success',
+    Failed = 'failed',
 }
 
 // BAD: tries every tagged branch.
 const Response = v.union([
-	v.object({ status: v.literal(ResponseStatus.Success), data: v.string() }),
-	v.object({ status: v.literal(ResponseStatus.Failed), error: v.string() }),
+    v.object({ status: v.literal(ResponseStatus.Success), data: v.string() }),
+    v.object({ status: v.literal(ResponseStatus.Failed), error: v.string() }),
 ]);
 
 // GOOD: dispatches by the status tag.
 const Response = v.variant('status', [
-	v.object({ status: v.literal(ResponseStatus.Success), data: v.string() }),
-	v.object({ status: v.literal(ResponseStatus.Failed), error: v.string() }),
+    v.object({ status: v.literal(ResponseStatus.Success), data: v.string() }),
+    v.object({ status: v.literal(ResponseStatus.Failed), error: v.string() }),
 ]);
 ```
 

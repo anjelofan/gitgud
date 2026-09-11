@@ -8,9 +8,9 @@ Mount stateful UI only while it renders. Mounting initializes its `$state`; unmo
 
 <!-- GOOD: mounting defines the visible panel's state lifetime. -->
 {#if activeTab === 'settings'}
-	<SettingsPanel />
+    <SettingsPanel />
 {:else if activeTab === 'profile'}
-	<ProfilePanel />
+    <ProfilePanel />
 {/if}
 ```
 

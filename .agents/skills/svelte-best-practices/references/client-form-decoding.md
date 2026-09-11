@@ -4,21 +4,21 @@ For an SPA mutation form, decode `FormData` with `decode-formdata` before valida
 
 ```svelte
 <script lang="ts">
-	import { decode } from 'decode-formdata';
+    import { decode } from 'decode-formdata';
 
-	// BAD: conversion alone does not validate untrusted form values.
-	function submitUnchecked(form: HTMLFormElement) {
-		mutation.mutate(decode(new FormData(form)));
-	}
+    // BAD: conversion alone does not validate untrusted form values.
+    function submitUnchecked(form: HTMLFormElement) {
+        mutation.mutate(decode(new FormData(form)));
+    }
 
-	// GOOD: isolate representation decoding before schema validation.
-	function decodeCreateItemForm(form: HTMLFormElement) {
-		return decode(new FormData(form), {
-			numbers: ['amount', 'quantity'],
-			dates: ['datedAt'],
-			arrays: ['tags'],
-		});
-	}
+    // GOOD: isolate representation decoding before schema validation.
+    function decodeCreateItemForm(form: HTMLFormElement) {
+        return decode(new FormData(form), {
+            numbers: ['amount', 'quantity'],
+            dates: ['datedAt'],
+            arrays: ['tags'],
+        });
+    }
 </script>
 ```
 

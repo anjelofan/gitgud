@@ -14,8 +14,8 @@ export { updateTaskFilter } from './action';
 ```tsx
 // GOOD: the entry composes the complete filtering operation exposed to its caller.
 export function TaskFilter({ workspaceId }: TaskFilterProps) {
-	const filter = useTaskFilter(workspaceId);
-	return <TaskFilterView filter={filter} />;
+    const filter = useTaskFilter(workspaceId);
+    return <TaskFilterView filter={filter} />;
 }
 ```
 
@@ -48,8 +48,8 @@ Features remain isolated siblings. A feature entry is a contract for an orchestr
 import { createReceipt } from '@/features/receipt';
 
 export async function submitOrder(input: OrderInput) {
-	const order = await persistOrder(input);
-	return createReceipt(order);
+    const order = await persistOrder(input);
+    return createReceipt(order);
 }
 ```
 

@@ -5,24 +5,24 @@ Catch only an expected failure from the smallest operation that can produce it. 
 ```typescript
 // BAD: a broad catch hides request-building and persistence defects.
 async function loadBroadly() {
-	try {
-		const request = buildRequest(input);
-		const response = await send(request);
-		await save(response);
-	} catch {
-		return emptyResult;
-	}
+    try {
+        const request = buildRequest(input);
+        const response = await send(request);
+        await save(response);
+    } catch {
+        return emptyResult;
+    }
 }
 
 // GOOD: translate the expected failure and preserve its cause.
 async function load() {
-	const request = buildRequest(input);
-	try {
-		return await send(request);
-	} catch (error) {
-		if (!(error instanceof NetworkUnavailable)) throw error;
-		throw new RetryableRequestError('Request could not be sent', { cause: error });
-	}
+    const request = buildRequest(input);
+    try {
+        return await send(request);
+    } catch (error) {
+        if (!(error instanceof NetworkUnavailable)) throw error;
+        throw new RetryableRequestError('Request could not be sent', { cause: error });
+    }
 }
 ```
 
@@ -35,19 +35,19 @@ Make one of these explicit decisions:
 ```typescript
 // GOOD: recover from the expected failure.
 try {
-	result = await loadProfile(userId);
+    result = await loadProfile(userId);
 } catch (error) {
-	if (!(error instanceof ProfileUnavailableError)) throw error;
-	recordRecovery(error, { userId, recoveryType: 'anonymous_profile' });
-	result = anonymousProfile;
+    if (!(error instanceof ProfileUnavailableError)) throw error;
+    recordRecovery(error, { userId, recoveryType: 'anonymous_profile' });
+    result = anonymousProfile;
 }
 
 // GOOD: propagation can add caller-relevant context.
 try {
-	await saveProfile(profile);
+    await saveProfile(profile);
 } catch (error) {
-	if (!(error instanceof StorageWriteError)) throw error;
-	throw new ProfilePersistenceError('Could not persist profile', { cause: error });
+    if (!(error instanceof StorageWriteError)) throw error;
+    throw new ProfilePersistenceError('Could not persist profile', { cause: error });
 }
 ```
 

@@ -11,7 +11,7 @@ function logPayload(value: object) {}
 
 // GOOD: untrusted input is narrowed immediately.
 function parseResponse(value: unknown) {
-	return v.parse(ResponseSchema, value);
+    return v.parse(ResponseSchema, value);
 }
 
 // GOOD: caught values are narrowed before use.

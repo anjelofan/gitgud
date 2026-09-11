@@ -35,8 +35,8 @@ Treat this guidance as language-agnostic. Adapt illustrative JavaScript SDK exam
 Read the linked guidance that governs the current task.
 
 1. Make telemetry fields queryable, interoperable, and bounded.
-   - When placing or naming queryable context, applying official semantic-convention libraries, or instrumenting loops, apply [structured attribute conventions](./references/structured-attributes.md) to distinguish operation attributes from occurrence attributes without copying correlated context by default.
-   - When a log occurrence needs an impact level, apply the [log severity model](./references/log-severity.md) without deriving severity from control flow or span status.
+    - When placing or naming queryable context, applying official semantic-convention libraries, or instrumenting loops, apply [structured attribute conventions](./references/structured-attributes.md) to distinguish operation attributes from occurrence attributes without copying correlated context by default.
+    - When a log occurrence needs an impact level, apply the [log severity model](./references/log-severity.md) without deriving severity from control flow or span status.
 2. Preserve the operational outcome and exception causal chain independently.
-   - When an operation fails, apply [failed-operation outcomes](./references/operation-failure-outcomes.md) so span status and any available `error.type` describe that operation independently from exception emission.
-   - When an exception is observed, propagated, recovered, retried, or terminally handled, apply [exception recording](./references/exception-recording.md) to preserve its causal chain without gaps or repeated payloads.
+    - When an operation fails, apply [failed-operation outcomes](./references/operation-failure-outcomes.md) so span status and any available `error.type` describe that operation independently from exception emission.
+    - When an exception is observed, propagated, recovered, retried, or terminally handled, apply [exception recording](./references/exception-recording.md) to preserve its causal chain without gaps or repeated payloads.

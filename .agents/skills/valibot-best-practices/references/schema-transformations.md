@@ -4,7 +4,7 @@ Parse and normalize in the schema so consumers receive the final shape, not raw 
 
 ```typescript
 const Timestamp = v.pipe(
-	v.number(),
-	v.transform(n => new Date(n)),
+    v.number(),
+    v.transform((n) => new Date(n)),
 );
 ```

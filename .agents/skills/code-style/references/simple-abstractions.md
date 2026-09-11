@@ -5,7 +5,7 @@ Use the most direct code that preserves the domain model and required behavior. 
 ```typescript
 // BAD: a single-use helper hides trivial work.
 function buildDisplayName(user: User) {
-	return `${user.firstName} ${user.lastName}`;
+    return `${user.firstName} ${user.lastName}`;
 }
 const displayName = buildDisplayName(user);
 

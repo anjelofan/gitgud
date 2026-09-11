@@ -6,28 +6,28 @@ Use `$derived(expression)` for an expression and `$derived.by(() => { ... })` fo
 <!-- BAD: Synchronize a Derived Value Through an Effect -->
 
 <script lang="ts">
-	import { SvelteMap } from 'svelte/reactivity';
+    import { SvelteMap } from 'svelte/reactivity';
 
-	interface Item {
-		category: string;
-	}
+    interface Item {
+        category: string;
+    }
 
-	function groupItems(items: Item[]) {
-		const groups = new SvelteMap<string, Item[]>();
-		for (const item of items) {
-			const group = groups.get(item.category) ?? [];
-			group.push(item);
-			groups.set(item.category, group);
-		}
-		return groups;
-	}
+    function groupItems(items: Item[]) {
+        const groups = new SvelteMap<string, Item[]>();
+        for (const item of items) {
+            const group = groups.get(item.category) ?? [];
+            group.push(item);
+            groups.set(item.category, group);
+        }
+        return groups;
+    }
 
-	let items = $state<Item[]>([]);
-	let grouped = $state(groupItems(items));
+    let items = $state<Item[]>([]);
+    let grouped = $state(groupItems(items));
 
-	$effect(() => {
-		grouped = groupItems(items);
-	});
+    $effect(() => {
+        grouped = groupItems(items);
+    });
 </script>
 ```
 
@@ -35,20 +35,20 @@ Use `$derived(expression)` for an expression and `$derived.by(() => { ... })` fo
 <!-- GOOD: Derive the Grouping Directly -->
 
 <script lang="ts">
-	interface Item {
-		category: string;
-	}
+    interface Item {
+        category: string;
+    }
 
-	let items = $state<Item[]>([]);
+    let items = $state<Item[]>([]);
 
-	const grouped = $derived.by(() => {
-		const groups = new Map<string, Item[]>();
-		for (const item of items) {
-			const group = groups.get(item.category) ?? [];
-			group.push(item);
-			groups.set(item.category, group);
-		}
-		return groups;
-	});
+    const grouped = $derived.by(() => {
+        const groups = new Map<string, Item[]>();
+        for (const item of items) {
+            const group = groups.get(item.category) ?? [];
+            group.push(item);
+            groups.set(item.category, group);
+        }
+        return groups;
+    });
 </script>
 ```

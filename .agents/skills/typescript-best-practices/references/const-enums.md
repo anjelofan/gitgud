@@ -4,10 +4,10 @@ Use a `const enum` for a named, closed set of primitive values that represents a
 
 ```typescript
 export const enum RequestStatus {
-	Idle = 'idle',
-	Loading = 'loading',
-	Success = 'success',
-	Failed = 'failed',
+    Idle = 'idle',
+    Loading = 'loading',
+    Success = 'success',
+    Failed = 'failed',
 }
 
 const status = RequestStatus.Loading;

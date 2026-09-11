@@ -6,18 +6,19 @@ Use `db.transaction` when several statements create or preserve one domain invar
 // node-postgres
 import { and, eq, gte, sql } from 'drizzle-orm';
 
-await db.transaction(async tx => {
-	const debit = await tx
-		.update(accounts)
-		.set({ balance: sql`${accounts.balance} - ${amount}` })
-		.where(and(eq(accounts.id, sourceAccountId), gte(accounts.balance, amount)));
-	if (debit.rowCount !== 1) throw new Error('Source account is missing or has insufficient funds');
+await db.transaction(async (tx) => {
+    const debit = await tx
+        .update(accounts)
+        .set({ balance: sql`${accounts.balance} - ${amount}` })
+        .where(and(eq(accounts.id, sourceAccountId), gte(accounts.balance, amount)));
+    if (debit.rowCount !== 1)
+        throw new Error('Source account is missing or has insufficient funds');
 
-	const credit = await tx
-		.update(accounts)
-		.set({ balance: sql`${accounts.balance} + ${amount}` })
-		.where(eq(accounts.id, destinationAccountId));
-	if (credit.rowCount !== 1) throw new Error('Destination account is missing');
+    const credit = await tx
+        .update(accounts)
+        .set({ balance: sql`${accounts.balance} + ${amount}` })
+        .where(eq(accounts.id, destinationAccountId));
+    if (credit.rowCount !== 1) throw new Error('Destination account is missing');
 });
 ```
 
