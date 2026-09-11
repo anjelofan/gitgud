@@ -15,7 +15,6 @@ Read the topic document that applies to the current task before writing code.
 - [`conventions/code-organization.md`](./conventions/code-organization.md) — required when creating any source file (JS-by-default rule, `$lib` layout, component prop typing).
 - [`conventions/open-telemetry.md`](./conventions/open-telemetry.md) — required for route files (`load` functions, form actions, `hooks.server.ts`) and server modules.
 - [`conventions/data-validation.md`](./conventions/data-validation.md) — required at every untrusted boundary (form submissions, GitHub webhooks, external API responses).
-- [`conventions/type-annotations.md`](./conventions/type-annotations.md) — required when writing or converting annotated code (return-type inference, JS↔TS migration, boundary contracts); extends the `typescript-best-practices` skill.
 - [`conventions/unit-test.md`](./conventions/unit-test.md) — required when writing colocated unit/integration tests (`src/**/*.test.{js,ts}`).
 
 ## Colocated Conventions

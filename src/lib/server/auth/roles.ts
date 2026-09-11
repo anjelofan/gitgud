@@ -7,15 +7,15 @@ const SERVICE_NAME = 'auth.roles';
 const logger = Logger.byName(SERVICE_NAME);
 
 export type Role =
-    { kind: 'teacher'; source: 'org-owner' } | { kind: 'student'; source: 'roster-entry' };
+    { kind: 'instructor'; source: 'org-owner' } | { kind: 'student'; source: 'roster-entry' };
 
 /**
- * Resolves a role for the current request context.
- * Returns `null` until classroom (org) and roster features supply the context
- * needed for teacher/student resolution; an org `member` is not a student —
- * student status requires a claimed roster entry, which is not implemented yet.
+ * Resolves the current user's role within a GitHub organization.
+ * Returns `{ kind: 'instructor' }` when the token's user is an active owner of
+ * `org`. An org `member` is not a student — student status requires a claimed
+ * roster entry, which is not implemented yet, so this returns `null` for them.
  */
-export async function resolveRole(token: string | null, org: string | null): Promise<Role | null> {
+export async function resolveRole(token: string | null, org: string | null) {
     if (token === null || org === null) return null;
 
     let membership: OrgMembership;
@@ -45,7 +45,7 @@ export async function resolveRole(token: string | null, org: string | null): Pro
     }
 
     const { state, role } = membership;
-    if (state === 'active' && role === 'admin') return { kind: 'teacher', source: 'org-owner' };
+    if (state === 'active' && role === 'admin') return { kind: 'instructor', source: 'org-owner' };
 
     // TODO: check if the member is in the student roster before granting the student role.
     return null;

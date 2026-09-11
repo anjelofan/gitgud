@@ -8,28 +8,33 @@ import {
     timingSafeEqual,
 } from 'node:crypto';
 
-import { building } from '$app/env';
 import { env } from '$env/dynamic/private';
 
-function initTokenKey() {
-    if (!building)
-        assert(
-            typeof env.SESSION_SECRET === 'string' && env.SESSION_SECRET.length >= 32,
-            'SESSION_SECRET must be set to at least 32 characters.',
-        );
+const TOKEN_KEY_LENGTH = 32;
+const MIN_SESSION_SECRET_LENGTH = 32;
 
-    const material = env.SESSION_SECRET ?? 'insecure-build-placeholder';
+let tokenKey: Buffer | null = null;
+
+export function deriveTokenKey(secret?: string) {
+    assert(
+        typeof secret === 'string' && secret.length >= MIN_SESSION_SECRET_LENGTH,
+        'SESSION_SECRET must be set to at least 32 characters.',
+    );
+
     const derived = hkdfSync(
         'sha256',
-        material,
+        secret,
         'gitgud-token-encryption',
         'github-token-storage',
-        32,
+        TOKEN_KEY_LENGTH,
     );
     return Buffer.from(derived);
 }
 
-const tokenKey = initTokenKey();
+function getTokenKey() {
+    tokenKey ??= deriveTokenKey(env.SESSION_SECRET);
+    return tokenKey;
+}
 
 const TOKEN_FORMAT_VERSION = 'v1';
 const TOKEN_PART_COUNT = 4;
@@ -40,7 +45,7 @@ export function hashSessionSecret(secret: string) {
 
 export function encryptToken(plaintext: string) {
     const iv = randomBytes(12);
-    const cipher = createCipheriv('aes-256-gcm', tokenKey, iv);
+    const cipher = createCipheriv('aes-256-gcm', getTokenKey(), iv);
     const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
     const tag = cipher.getAuthTag();
     return [
@@ -57,7 +62,7 @@ export function decryptToken(encoded: string) {
         throw new Error('Malformed encrypted token payload.');
 
     const [, iv, ciphertext, tag] = parts;
-    const decipher = createDecipheriv('aes-256-gcm', tokenKey, Buffer.from(iv, 'base64url'));
+    const decipher = createDecipheriv('aes-256-gcm', getTokenKey(), Buffer.from(iv, 'base64url'));
     decipher.setAuthTag(Buffer.from(tag, 'base64url'));
     return Buffer.concat([
         decipher.update(Buffer.from(ciphertext, 'base64url')),

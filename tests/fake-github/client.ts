@@ -9,10 +9,7 @@ const CONTROL_URL = new URL(
 
 /** The boundary contract: the control endpoint answers with a value for
  * issue-ops and null for seed ops. */
-export async function fakeGithub(
-    op: string,
-    args: Record<string, unknown> = {},
-): Promise<string | null> {
+export async function fakeGithub(op: string, args: Record<string, unknown> = {}) {
     const response = await fetch(CONTROL_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

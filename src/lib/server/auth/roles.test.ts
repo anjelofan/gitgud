@@ -40,9 +40,9 @@ describe('resolveRole', () => {
         expect(await resolveRole(TOKEN, null)).toBeNull();
     });
 
-    it('grants the teacher role to an active org admin', async () => {
+    it('grants the instructor role to an active org admin', async () => {
         expect(await resolveRole(TOKEN, 'admin-org')).toEqual({
-            kind: 'teacher',
+            kind: 'instructor',
             source: 'org-owner',
         });
     });

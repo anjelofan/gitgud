@@ -12,7 +12,6 @@ import { resolveFakeGitHubPort } from './tests/fake-github/port.ts';
 if (process.env.VITEST === 'true') {
     loadEnvFile({ path: '.env.test' });
     resolveFakeGitHubPort();
-    delete process.env.GITHUB_ORG;
 }
 
 export default defineConfig({
@@ -27,5 +26,8 @@ export default defineConfig({
         reporters: ['default', 'json'],
         outputFile: { json: './vitest-results/.last-run.json' },
         passWithNoTests: true,
+        // DB-backed suites share one local Postgres and truncate each other's
+        // rows when run concurrently, so test files execute sequentially.
+        fileParallelism: false,
     },
 });

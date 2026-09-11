@@ -1,7 +1,6 @@
-import { env } from '$env/dynamic/private';
-
+import { db } from '$lib/server/db';
+import { listOwnedPrograms } from '$lib/features/programs/queries.server';
 import { Logger } from '$lib/server/telemetry/logger';
-import { resolveRole } from '$lib/server/auth/roles';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
 const SERVICE_NAME = 'routes.home';
@@ -14,14 +13,13 @@ export async function load({ locals: { session } }) {
             'user.authenticated': session !== null,
         });
 
-        if (session === null) return { user: null, role: null };
+        if (session === null) return { user: null, programs: [] };
 
         span.setAttribute('user.id', session.user.id);
 
-        const role = await resolveRole(session.githubToken, env.GITHUB_ORG || null);
-        if (role !== null) span.setAttribute('user.role', role.kind);
-
         const { login, avatarUrl } = session.user;
-        return { user: { login, avatarUrl }, role: role === null ? null : { kind: role.kind } };
+        const programs = await listOwnedPrograms(db, session.user.id);
+        span.setAttribute('program.count', programs.length);
+        return { user: { login, avatarUrl }, programs };
     });
 }
