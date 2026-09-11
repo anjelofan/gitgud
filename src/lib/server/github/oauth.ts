@@ -1,29 +1,30 @@
 import assert from 'node:assert/strict';
 import { createHash, randomBytes } from 'node:crypto';
 
-import { building } from '$app/env';
 import { env } from '$env/dynamic/private';
 
 import { githubApi, oauthBase, oauthRequest } from './client';
 import { GithubUserSchema, OAuthTokenResponseSchema } from './contracts';
 
-function initCredentials() {
+let credentials: { clientId: string; clientSecret: string } | null = null;
+
+function getCredentials() {
+    if (credentials !== null) return credentials;
+
     const clientId = env.GITHUB_APP_CLIENT_ID;
     const clientSecret = env.GITHUB_APP_CLIENT_SECRET;
-    if (!building) {
-        assert(
-            typeof clientId === 'string' && clientId.length > 0,
-            'GITHUB_APP_CLIENT_ID must be set.',
-        );
-        assert(
-            typeof clientSecret === 'string' && clientSecret.length > 0,
-            'GITHUB_APP_CLIENT_SECRET must be set.',
-        );
-    }
-    return { clientId: clientId ?? '', clientSecret: clientSecret ?? '' };
-}
+    assert(
+        typeof clientId === 'string' && clientId.length > 0,
+        'GITHUB_APP_CLIENT_ID must be set.',
+    );
+    assert(
+        typeof clientSecret === 'string' && clientSecret.length > 0,
+        'GITHUB_APP_CLIENT_SECRET must be set.',
+    );
 
-const { clientId, clientSecret } = initCredentials();
+    credentials = { clientId, clientSecret };
+    return credentials;
+}
 
 export const OAUTH_STATE_COOKIE = 'github_oauth_state';
 
@@ -38,6 +39,7 @@ export function createPkcePair() {
 }
 
 export function authorizationUrl(redirectUri: string, state: string, codeChallenge: string) {
+    const { clientId } = getCredentials();
     const url = new URL('/login/oauth/authorize', oauthBase);
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
@@ -48,6 +50,7 @@ export function authorizationUrl(redirectUri: string, state: string, codeChallen
 }
 
 export function exchangeCode(code: string, codeVerifier: string, redirectUri: string) {
+    const { clientId, clientSecret } = getCredentials();
     return oauthRequest('/login/oauth/access_token', OAuthTokenResponseSchema, {
         method: 'POST',
         body: {
@@ -61,6 +64,7 @@ export function exchangeCode(code: string, codeVerifier: string, redirectUri: st
 }
 
 export function refreshAccessToken(refreshToken: string) {
+    const { clientId, clientSecret } = getCredentials();
     return oauthRequest('/login/oauth/access_token', OAuthTokenResponseSchema, {
         method: 'POST',
         body: {

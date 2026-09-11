@@ -1,8 +1,37 @@
 import { describe, expect, it } from 'vitest';
 
-import { constantTimeEqual, decryptToken, encryptToken, hashSessionSecret } from './crypto';
+import {
+    constantTimeEqual,
+    decryptToken,
+    deriveTokenKey,
+    encryptToken,
+    hashSessionSecret,
+} from './crypto';
 
 describe('crypto', () => {
+    describe('deriveTokenKey', () => {
+        it('rejects a missing secret', () => {
+            expect(() => deriveTokenKey()).toThrow(/SESSION_SECRET/u);
+        });
+
+        it('rejects a secret shorter than 32 characters', () => {
+            expect(() => deriveTokenKey('a'.repeat(31))).toThrow(/SESSION_SECRET/u);
+        });
+
+        it('derives a deterministic 32-byte key from a valid secret', () => {
+            const secret = 'a'.repeat(32);
+            const key = deriveTokenKey(secret);
+            expect(key).toHaveLength(32);
+            expect(key.equals(deriveTokenKey(secret))).toBe(true);
+        });
+
+        it('derives different keys for different secrets', () => {
+            expect(deriveTokenKey('a'.repeat(32)).equals(deriveTokenKey('b'.repeat(32)))).toBe(
+                false,
+            );
+        });
+    });
+
     describe('encryptToken/decryptToken', () => {
         it('round-trips the plaintext', () => {
             const plaintext = 'ghu_16C7e42F292c6912E7710c838347Ae178B4a';
