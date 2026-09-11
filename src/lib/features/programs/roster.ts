@@ -1,7 +1,7 @@
 import type { Roster } from './contracts.ts';
 
 /** Strips a leading UTF-8 byte-order mark left by spreadsheet CSV exports. */
-function stripByteOrderMark(content: string): string {
+function stripByteOrderMark(content: string) {
     return content.startsWith('\uFEFF') ? content.slice(1) : content;
 }
 
@@ -12,7 +12,7 @@ function stripByteOrderMark(content: string): string {
  * supported. A quote inside an unquoted field is a literal character, so a
  * name such as `Ada "Ace" Lovelace` parses instead of failing the upload.
  */
-function parseCsvRecord(record: string): string[] {
+function parseCsvRecord(record: string) {
     const fields: string[] = [];
     let field = '';
     let quoted = false;
@@ -41,7 +41,7 @@ function parseCsvRecord(record: string): string[] {
 }
 
 /** Parses the first column of a newline-separated CSV roster into student names. */
-export function parseCsvRoster(content: string): string[] {
+export function parseCsvRoster(content: string) {
     return stripByteOrderMark(content)
         .split(/\r\n|\n|\r/u)
         .map((record) => {
@@ -52,20 +52,20 @@ export function parseCsvRoster(content: string): string[] {
 }
 
 /** Parses a newline-separated list of student names. */
-export function parseTextRoster(content: string): string[] {
+export function parseTextRoster(content: string) {
     return stripByteOrderMark(content)
         .split(/\r\n|\n|\r/u)
         .map((line) => line.trim())
         .filter((name) => name !== '');
 }
 
-function parseRosterSource(roster: Roster): string[] {
+function parseRosterSource(roster: Roster) {
     if (roster.format === 'csv') return parseCsvRoster(roster.content);
     return parseTextRoster(roster.content);
 }
 
 /** Parses either roster source into a normalized, de-duplicated student-name list. */
-export function parseRoster(roster: Roster | null): string[] {
+export function parseRoster(roster: Roster | null) {
     const names = roster === null ? [] : parseRosterSource(roster);
     return [...new Set(names)];
 }

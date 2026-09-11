@@ -15,7 +15,7 @@ export type Role =
  * `org`. An org `member` is not a student — student status requires a claimed
  * roster entry, which is not implemented yet, so this returns `null` for them.
  */
-export async function resolveRole(token: string | null, org: string | null): Promise<Role | null> {
+export async function resolveRole(token: string | null, org: string | null) {
     if (token === null || org === null) return null;
 
     let membership: OrgMembership;

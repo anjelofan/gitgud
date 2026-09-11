@@ -38,9 +38,10 @@ export async function load({ locals: { session }, params }) {
             error(404, 'Program not found');
         }
 
+        const { name, org } = result.program;
         return {
-            program: { name: result.program.name, org: result.program.org },
-            students: result.students.map((entry) => ({ id: entry.id, name: entry.name })),
+            program: { name, org },
+            students: result.students.map(({ id, name }) => ({ id, name })),
         };
     });
 }

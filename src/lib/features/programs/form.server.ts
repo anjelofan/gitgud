@@ -1,11 +1,11 @@
 /** Decodes a single text form field; non-string values decode to the empty string. */
-function stringField(formData: FormData, key: string): string {
+function stringField(formData: FormData, key: string) {
     const value = formData.get(key);
     return typeof value === 'string' ? value : '';
 }
 
 /** Decodes an optional roster source: absent fields decode to `null`, files to their text content. */
-async function rosterSource(formData: FormData, key: string): Promise<string | null> {
+async function rosterSource(formData: FormData, key: string) {
     const value = formData.get(key);
     if (value === null) return null;
     if (typeof value === 'string') return value;

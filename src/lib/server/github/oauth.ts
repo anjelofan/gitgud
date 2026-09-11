@@ -27,7 +27,7 @@ const { clientId, clientSecret } = initCredentials();
 
 export const OAUTH_STATE_COOKIE = 'github_oauth_state';
 
-export function createState(): string {
+export function createState() {
     return randomBytes(32).toString('base64url');
 }
 
