@@ -9,7 +9,7 @@ export const programs = pgTable(
         id: uuid('id').primaryKey().defaultRandom(),
         name: text('name').notNull(),
         org: text('org').notNull(),
-        createdById: uuid('created_by_id')
+        instructorId: uuid('instructor_id')
             .notNull()
             .references(() => users.id, { onDelete: 'cascade' }),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -18,7 +18,7 @@ export const programs = pgTable(
             .defaultNow()
             .$onUpdateFn(() => sql`now()`),
     },
-    (table) => [index('programs_created_by_id_idx').on(table.createdById)],
+    (table) => [index('programs_instructor_id_idx').on(table.instructorId)],
 );
 
 export const rosterEntries = pgTable(
@@ -39,7 +39,7 @@ export type RosterEntry = typeof rosterEntries.$inferSelect;
 
 export const programsRelations = relations(programs, ({ many, one }) => ({
     rosterEntries: many(rosterEntries),
-    createdBy: one(users, { fields: [programs.createdById], references: [users.id] }),
+    instructor: one(users, { fields: [programs.instructorId], references: [users.id] }),
 }));
 
 export const rosterEntriesRelations = relations(rosterEntries, ({ one }) => ({

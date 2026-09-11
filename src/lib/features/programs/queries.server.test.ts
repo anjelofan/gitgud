@@ -26,9 +26,9 @@ async function instructorId(login: string) {
 
 describe('createProgramWithRoster', () => {
     it('inserts the program and its roster entries', async () => {
-        const ownerId = await instructorId(INSTRUCTOR.login);
+        const creatorId = await instructorId(INSTRUCTOR.login);
         const program = await createProgramWithRoster(db, {
-            ownerId,
+            creatorId,
             name: 'Algorithms',
             org: 'acme-edu',
             studentNames: ['Ada Lovelace', 'Grace Hopper'],
@@ -36,9 +36,9 @@ describe('createProgramWithRoster', () => {
 
         expect(program.name).toBe('Algorithms');
         expect(program.org).toBe('acme-edu');
-        expect(program.createdById).toBe(ownerId);
+        expect(program.instructorId).toBe(creatorId);
 
-        const stored = await getProgramForInstructor(db, program.id, ownerId);
+        const stored = await getProgramForInstructor(db, program.id, creatorId);
         expect(stored?.students.map((entry) => entry.name)).toEqual([
             'Ada Lovelace',
             'Grace Hopper',
@@ -46,40 +46,40 @@ describe('createProgramWithRoster', () => {
     });
 
     it('accepts a program with no roster', async () => {
-        const ownerId = await instructorId(INSTRUCTOR.login);
+        const creatorId = await instructorId(INSTRUCTOR.login);
         const program = await createProgramWithRoster(db, {
-            ownerId,
+            creatorId,
             name: 'Empty Roster',
             org: 'acme-edu',
             studentNames: [],
         });
 
-        const stored = await getProgramForInstructor(db, program.id, ownerId);
+        const stored = await getProgramForInstructor(db, program.id, creatorId);
         expect(stored?.program.name).toBe('Empty Roster');
         expect(stored?.students).toEqual([]);
     });
 
     it('rolls back the program when a roster entry fails to insert', async () => {
-        const ownerId = await instructorId(INSTRUCTOR.login);
+        const creatorId = await instructorId(INSTRUCTOR.login);
         await expect(
             createProgramWithRoster(db, {
-                ownerId,
+                creatorId,
                 name: 'Doomed Program',
                 org: 'acme-edu',
                 studentNames: ['Ada Lovelace', 'Ada Lovelace'],
             }),
         ).rejects.toThrow();
 
-        expect(await listOwnedPrograms(db, ownerId)).toEqual([]);
+        expect(await listOwnedPrograms(db, creatorId)).toEqual([]);
     });
 });
 
 describe('getProgramForInstructor', () => {
     it('hides programs owned by other instructors', async () => {
-        const ownerId = await instructorId(INSTRUCTOR.login);
+        const creatorId = await instructorId(INSTRUCTOR.login);
         const intruderId = await instructorId(OTHER.login);
         const program = await createProgramWithRoster(db, {
-            ownerId,
+            creatorId,
             name: 'Secret Seminar',
             org: 'acme-edu',
             studentNames: [],
@@ -89,21 +89,21 @@ describe('getProgramForInstructor', () => {
     });
 
     it('returns null for a missing program id', async () => {
-        const ownerId = await instructorId(INSTRUCTOR.login);
+        const creatorId = await instructorId(INSTRUCTOR.login);
         const missingId = '00000000-0000-0000-0000-000000000000';
-        expect(await getProgramForInstructor(db, missingId, ownerId)).toBeNull();
+        expect(await getProgramForInstructor(db, missingId, creatorId)).toBeNull();
     });
 
     it('sorts roster entries alphabetically', async () => {
-        const ownerId = await instructorId(INSTRUCTOR.login);
+        const creatorId = await instructorId(INSTRUCTOR.login);
         const program = await createProgramWithRoster(db, {
-            ownerId,
+            creatorId,
             name: 'Sorted',
             org: 'acme-edu',
             studentNames: ['Grace Hopper', 'Ada Lovelace', 'Alan Turing'],
         });
 
-        const stored = await getProgramForInstructor(db, program.id, ownerId);
+        const stored = await getProgramForInstructor(db, program.id, creatorId);
         expect(stored?.students.map((entry) => entry.name)).toEqual([
             'Ada Lovelace',
             'Alan Turing',
@@ -114,28 +114,28 @@ describe('getProgramForInstructor', () => {
 
 describe('listOwnedPrograms', () => {
     it('lists only the programs the instructor created, newest first', async () => {
-        const ownerId = await instructorId(INSTRUCTOR.login);
+        const creatorId = await instructorId(INSTRUCTOR.login);
         const intruderId = await instructorId(OTHER.login);
         await createProgramWithRoster(db, {
-            ownerId,
+            creatorId,
             name: 'Older Program',
             org: 'acme-edu',
             studentNames: [],
         });
         await createProgramWithRoster(db, {
-            ownerId: intruderId,
+            creatorId: intruderId,
             name: 'Not Mine',
             org: 'other-org',
             studentNames: [],
         });
         await createProgramWithRoster(db, {
-            ownerId,
+            creatorId,
             name: 'Newer Program',
             org: 'acme-edu',
             studentNames: [],
         });
 
-        const listed = await listOwnedPrograms(db, ownerId);
+        const listed = await listOwnedPrograms(db, creatorId);
         expect(listed.map((entry) => entry.name)).toEqual(['Newer Program', 'Older Program']);
         expect(listed.map((entry) => entry.org)).toEqual(['acme-edu', 'acme-edu']);
     });

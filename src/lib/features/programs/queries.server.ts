@@ -12,7 +12,7 @@ const logger = Logger.byName(SERVICE_NAME);
 const tracer = Tracer.byName(SERVICE_NAME);
 
 export interface CreateProgramArgs {
-    ownerId: string;
+    creatorId: string;
     name: string;
     org: string;
     studentNames: string[];
@@ -22,7 +22,7 @@ export interface CreateProgramArgs {
 export async function createProgramWithRoster(db: DbConnection, args: CreateProgramArgs) {
     return await tracer.asyncSpan('create-program-with-roster', async (span) => {
         span.setAttributes({
-            'user.id': args.ownerId,
+            'user.id': args.creatorId,
             'program.name': args.name,
             'program.org': args.org,
             'program.roster_size': args.studentNames.length,
@@ -31,7 +31,7 @@ export async function createProgramWithRoster(db: DbConnection, args: CreateProg
         return await db.transaction(async (tx) => {
             const inserted = await tx
                 .insert(programs)
-                .values({ name: args.name, org: args.org, createdById: args.ownerId })
+                .values({ name: args.name, org: args.org, instructorId: args.creatorId })
                 .returning();
             const [program] = inserted;
             assert(typeof program !== 'undefined', 'program insert returned no row.');
@@ -67,7 +67,7 @@ export async function getProgramForInstructor(
             .select({ program: programs, rosterEntry: rosterEntries })
             .from(programs)
             .leftJoin(rosterEntries, eq(rosterEntries.programId, programs.id))
-            .where(and(eq(programs.id, programId), eq(programs.createdById, instructorId)))
+            .where(and(eq(programs.id, programId), eq(programs.instructorId, instructorId)))
             .orderBy(rosterEntries.name);
         const [first] = rows;
         if (typeof first === 'undefined') return null;
@@ -78,9 +78,9 @@ export async function getProgramForInstructor(
 }
 
 /** Lists the programs an instructor created, newest first. */
-export async function listOwnedPrograms(db: DbConnection, ownerId: string) {
+export async function listOwnedPrograms(db: DbConnection, instructorId: string) {
     return await tracer.asyncSpan('list-owned-programs', async (span) => {
-        span.setAttribute('user.id', ownerId);
+        span.setAttribute('user.id', instructorId);
 
         return await db
             .select({
@@ -90,7 +90,7 @@ export async function listOwnedPrograms(db: DbConnection, ownerId: string) {
                 createdAt: programs.createdAt,
             })
             .from(programs)
-            .where(eq(programs.createdById, ownerId))
+            .where(eq(programs.instructorId, instructorId))
             .orderBy(desc(programs.createdAt));
     });
 }

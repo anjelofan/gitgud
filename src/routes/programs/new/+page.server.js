@@ -92,7 +92,7 @@ export const actions = {
             }
 
             const program = await createProgramWithRoster(db, {
-                ownerId: session.user.id,
+                creatorId: session.user.id,
                 name: parsed.output.name,
                 org,
                 studentNames: students,
