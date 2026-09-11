@@ -1,6 +1,6 @@
 # gitgud
 
-A GitHub-based classroom platform. Teachers create classrooms linked to a GitHub org, import rosters from CSV, and publish assignments with deadlines and GitHub Actions autograding. Students claim roster entries, join teams, and accept assignments via invitation links — everything lives in real GitHub repos, and scores flow back to the teacher dashboard via workflow webhooks and polling.
+A GitHub-based training program platform. Users create training programs from the GitHub orgs they own, becoming the program's first instructor; instructors import rosters from CSV and publish assignments with deadlines and GitHub Actions autograding. Students claim roster entries, join groups, and accept assignments via invitation links — everything lives in real GitHub repos, and scores flow back to the instructor dashboard via workflow webhooks and polling. Students participate as outside collaborators; org membership is managed on GitHub and is out of GitGud's scope.
 
 ## Stack
 
@@ -12,9 +12,9 @@ A GitHub-based classroom platform. Teachers create classrooms linked to a GitHub
 
 ## Features
 
-- **Auth** — GitHub sign-in via a GitHub App; roles resolved as teacher (org owner/classroom creator) or student (claimed roster entry).
-- **Teacher** — create classrooms linked to existing GitHub orgs, load students from CSV with an invite/claim flow, create assignments with deadlines and autograding, lock pushes after deadlines, flag late submissions, manage/archive classrooms and assignments, view score dashboards and export to CSV.
-- **Student** — claim a roster entry, create or join a team, accept assignments via invitation link (individual repo or team repo with write access for all members).
+- **Auth** — GitHub sign-in via a GitHub App; instructors are assigned per program, and students are outside collaborators resolved from a claimed roster entry.
+- **Instructor** — create programs from GitHub orgs they own, load students from CSV with an invite/claim flow, create assignments with deadlines and autograding, lock pushes after deadlines, flag late submissions, manage/archive programs and assignments, view score dashboards and export to CSV.
+- **Student** — claim a roster entry, create or join a group, accept assignments via invitation link (per-repo collaborator access for an individual or every group member).
 - **Autograding** — powered by a GitHub Actions workflow already included in the template repo; scores are captured on workflow completion via webhook with polling fallback, and failures/missing workflows are surfaced in the dashboard.
 
 See [`FEATURES.md`](FEATURES.md) for the full feature breakdown.

@@ -1,11 +1,17 @@
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 
-import { CreateClassroomInputSchema, ROSTER_SOURCE_MAX_LENGTH } from './contracts.ts';
+import {
+    CreateProgramInputSchema,
+    ROSTER_MAX_STUDENTS,
+    ROSTER_NAME_MAX_LENGTH,
+    ROSTER_SOURCE_MAX_LENGTH,
+    StudentRosterSchema,
+} from './contracts.ts';
 
-describe('CreateClassroomInputSchema', () => {
+describe('CreateProgramInputSchema', () => {
     it('selects the CSV roster when both roster sources are provided', () => {
-        const result = v.safeParse(CreateClassroomInputSchema, {
+        const result = v.safeParse(CreateProgramInputSchema, {
             name: 'Algorithms',
             org: 'acme-edu',
             rosterCsv: 'Ada Lovelace\n',
@@ -17,7 +23,7 @@ describe('CreateClassroomInputSchema', () => {
     });
 
     it('uses the text roster when no CSV is provided', () => {
-        const result = v.safeParse(CreateClassroomInputSchema, {
+        const result = v.safeParse(CreateProgramInputSchema, {
             name: 'Algorithms',
             org: 'acme-edu',
             rosterCsv: null,
@@ -32,7 +38,7 @@ describe('CreateClassroomInputSchema', () => {
     });
 
     it('yields no roster when both sources are blank', () => {
-        const result = v.safeParse(CreateClassroomInputSchema, {
+        const result = v.safeParse(CreateProgramInputSchema, {
             name: 'Algorithms',
             org: 'acme-edu',
             rosterCsv: null,
@@ -42,8 +48,8 @@ describe('CreateClassroomInputSchema', () => {
         if (result.success) expect(result.output.roster).toBeNull();
     });
 
-    it('trims the classroom name and org into domain values', () => {
-        const result = v.safeParse(CreateClassroomInputSchema, {
+    it('trims the program name and org into domain values', () => {
+        const result = v.safeParse(CreateProgramInputSchema, {
             name: '  Algorithms  ',
             org: ' acme-edu ',
             rosterCsv: null,
@@ -57,7 +63,7 @@ describe('CreateClassroomInputSchema', () => {
     });
 
     it('rejects an org that is not a valid GitHub login', () => {
-        const result = v.safeParse(CreateClassroomInputSchema, {
+        const result = v.safeParse(CreateProgramInputSchema, {
             name: 'Algorithms',
             org: 'not an org!',
             rosterCsv: null,
@@ -66,13 +72,48 @@ describe('CreateClassroomInputSchema', () => {
         expect(result.success).toBe(false);
     });
 
+    it('rejects org logins with consecutive or edge hyphens', () => {
+        for (const org of ['acme--edu', '-acme', 'acme-']) {
+            const result = v.safeParse(CreateProgramInputSchema, {
+                name: 'Algorithms',
+                org,
+                rosterCsv: null,
+                rosterText: null,
+            });
+            expect(result.success).toBe(false);
+        }
+    });
+
     it('rejects roster content over the size cap', () => {
-        const result = v.safeParse(CreateClassroomInputSchema, {
+        const result = v.safeParse(CreateProgramInputSchema, {
             name: 'Algorithms',
             org: 'acme-edu',
             rosterCsv: 'x'.repeat(ROSTER_SOURCE_MAX_LENGTH + 1),
             rosterText: null,
         });
         expect(result.success).toBe(false);
+    });
+});
+
+describe('StudentRosterSchema', () => {
+    it('accepts a roster exactly at the student cap', () => {
+        const students = Array.from(
+            { length: ROSTER_MAX_STUDENTS },
+            (_, index) => `Student ${index}`,
+        );
+        expect(v.safeParse(StudentRosterSchema, students).success).toBe(true);
+    });
+
+    it('rejects a roster over the student cap', () => {
+        const students = Array.from(
+            { length: ROSTER_MAX_STUDENTS + 1 },
+            (_, index) => `Student ${index}`,
+        );
+        expect(v.safeParse(StudentRosterSchema, students).success).toBe(false);
+    });
+
+    it('rejects a student name over the length cap', () => {
+        const students = ['x'.repeat(ROSTER_NAME_MAX_LENGTH + 1)];
+        expect(v.safeParse(StudentRosterSchema, students).success).toBe(false);
     });
 });

@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { listOwnedClassrooms } from '$lib/features/classrooms/queries.server';
+import { listOwnedPrograms } from '$lib/features/programs/queries.server';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
@@ -13,13 +13,13 @@ export async function load({ locals: { session } }) {
             'user.authenticated': session !== null,
         });
 
-        if (session === null) return { user: null, classrooms: [] };
+        if (session === null) return { user: null, programs: [] };
 
         span.setAttribute('user.id', session.user.id);
 
         const { login, avatarUrl } = session.user;
-        const classrooms = await listOwnedClassrooms(db, session.user.id);
-        span.setAttribute('classroom.count', classrooms.length);
-        return { user: { login, avatarUrl }, classrooms };
+        const programs = await listOwnedPrograms(db, session.user.id);
+        span.setAttribute('program.count', programs.length);
+        return { user: { login, avatarUrl }, programs };
     });
 }

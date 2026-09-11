@@ -13,8 +13,8 @@ Use hierarchical dot-separated names: `module.submodule.service`.
 Examples:
 
 - `hooks` — request lifecycle (as in `hooks.server.ts`)
-- `routes.dashboard.classroom` — a route module
-- `database.classroom` — database access for classrooms
+- `routes.dashboard.program` — a route module
+- `database.program` — database access for programs
 
 ## Logger & Tracer Instantiation
 
@@ -24,7 +24,7 @@ Every module that needs logging/tracing declares both at module level:
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
-const SERVICE_NAME = 'routes.dashboard.classroom';
+const SERVICE_NAME = 'routes.dashboard.program';
 const logger = Logger.byName(SERVICE_NAME);
 const tracer = Tracer.byName(SERVICE_NAME);
 ```
@@ -93,10 +93,10 @@ if (!result.success) {
 // Boundary permission failure: request terminates here, so fatal.
 import { error } from '@sveltejs/kit';
 
-if (!locals.user.isTeacher) {
-    logger.fatal('insufficient permissions to access classroom', void 0, {
+if (!locals.user.isInstructor) {
+    logger.fatal('insufficient permissions to access program', void 0, {
         'user.id': locals.user.id,
-        'user.is_teacher': locals.user.isTeacher,
+        'user.is_instructor': locals.user.isInstructor,
     });
     error(403);
 }
@@ -119,7 +119,7 @@ Use `kebab-case` for span names. `Tracer.span` wraps synchronous operations; `Tr
 
 ```ts
 return tracer.asyncSpan('list-assignments', async (span) => {
-    span.setAttribute('classroom.id', classroomId);
+    span.setAttribute('program.id', programId);
     // ...
 });
 ```
@@ -134,7 +134,7 @@ Use a dot-separated namespace with `snake_case` property names: `namespace.resou
 | `network.*`    | Client network information            |
 | `session.*`    | Authenticated request context (spans) |
 | `user.*`       | User entity (log attributes)          |
-| `classroom.*`  | Classroom entity                      |
+| `program.*`    | Program entity                        |
 | `assignment.*` | Assignment entity                     |
 | `submission.*` | Submission entity                     |
 | `github.*`     | GitHub API interaction context        |
@@ -152,7 +152,7 @@ return tracer.asyncSpan('load-assignment-dashboard', async (span) => {
     span.setAttributes({
         'session.id': sessionId,
         'user.id': userId,
-        'user.is_teacher': isTeacher,
+        'user.is_instructor': isInstructor,
     });
 
     if (assignmentId !== null) span.setAttribute('assignment.id', assignmentId);

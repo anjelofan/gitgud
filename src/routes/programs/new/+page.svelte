@@ -19,7 +19,7 @@
 
 <div>
     <a href={resolve('/')}>← Back to dashboard</a>
-    <h1>Create a classroom</h1>
+    <h1>Create a program</h1>
 
     {#if form !== null}
         <div role="alert">
@@ -34,11 +34,11 @@
         </div>
     {/if}
 
-    <form method="POST" action="/classrooms/new" enctype="multipart/form-data">
+    <form method="POST" action="/programs/new" enctype="multipart/form-data">
         <div>
-            <label for="classroom-name">Classroom name</label>
+            <label for="program-name">Program name</label>
             <input
-                id="classroom-name"
+                id="program-name"
                 name="name"
                 type="text"
                 required
@@ -48,9 +48,9 @@
         </div>
 
         <div>
-            <label for="classroom-org">GitHub organization</label>
+            <label for="program-org">GitHub organization</label>
             <input
-                id="classroom-org"
+                id="program-org"
                 name="org"
                 type="text"
                 required
@@ -63,9 +63,9 @@
         <fieldset>
             <legend>Student roster (optional)</legend>
             <div>
-                <label for="classroom-roster-csv">Upload roster CSV</label>
+                <label for="program-roster-csv">Upload roster CSV</label>
                 <input
-                    id="classroom-roster-csv"
+                    id="program-roster-csv"
                     name="rosterCsv"
                     type="file"
                     accept=".csv,text/csv"
@@ -73,12 +73,12 @@
                 <p>Student names in the first column.</p>
             </div>
             <div>
-                <label for="classroom-roster-text">Or paste student names</label>
-                <textarea id="classroom-roster-text" name="rosterText" rows="6"></textarea>
+                <label for="program-roster-text">Or paste student names</label>
+                <textarea id="program-roster-text" name="rosterText" rows="6"></textarea>
                 <p>One student name per line.</p>
             </div>
         </fieldset>
 
-        <button type="submit">Create classroom</button>
+        <button type="submit">Create program</button>
     </form>
 </div>

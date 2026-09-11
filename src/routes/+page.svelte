@@ -1,14 +1,14 @@
 <script lang="ts">
-    import type { Classroom, User } from '$lib/server/db/schema';
+    import type { Program, User } from '$lib/server/db/schema';
     import { resolve } from '$app/paths';
 
     interface Props {
         user: Pick<User, 'login' | 'avatarUrl'> | null;
-        classrooms: Pick<Classroom, 'id' | 'name' | 'org'>[];
+        programs: Pick<Program, 'id' | 'name' | 'org'>[];
     }
 
     let { data } = $props();
-    let { user, classrooms }: Props = $derived(data);
+    let { user, programs }: Props = $derived(data);
 </script>
 
 <div>
@@ -29,18 +29,18 @@
         </div>
 
         <section>
-            <h2>Your classrooms</h2>
-            <a href={resolve('/classrooms/new')}>Create classroom</a>
-            {#if classrooms.length === 0}
-                <p>No classrooms yet.</p>
+            <h2>Your programs</h2>
+            <a href={resolve('/programs/new')}>Create program</a>
+            {#if programs.length === 0}
+                <p>No programs yet.</p>
             {:else}
                 <ul>
-                    {#each classrooms as classroom (classroom.id)}
+                    {#each programs as program (program.id)}
                         <li>
-                            <a href={resolve('/classrooms/[id]', { id: classroom.id })}>
-                                {classroom.name}
+                            <a href={resolve('/programs/[id]', { id: program.id })}>
+                                {program.name}
                             </a>
-                            in <code>{classroom.org}</code>
+                            in <code>{program.org}</code>
                         </li>
                     {/each}
                 </ul>

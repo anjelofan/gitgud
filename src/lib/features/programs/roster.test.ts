@@ -30,6 +30,17 @@ describe('parseCsvRoster', () => {
         const content = 'Ada Lovelace\n\n   ,leftover\n  \nGrace Hopper\n';
         expect(parseCsvRoster(content)).toEqual(['Ada Lovelace', 'Grace Hopper']);
     });
+
+    it('treats a quote inside an unquoted field as a literal character', () => {
+        expect(parseCsvRoster('Ada "Ace" Lovelace\n')).toEqual(['Ada "Ace" Lovelace']);
+    });
+
+    it('strips a leading UTF-8 byte-order mark', () => {
+        expect(parseCsvRoster('\uFEFFAda Lovelace\nGrace Hopper\n')).toEqual([
+            'Ada Lovelace',
+            'Grace Hopper',
+        ]);
+    });
 });
 
 describe('parseTextRoster', () => {
@@ -43,6 +54,13 @@ describe('parseTextRoster', () => {
 
     it('keeps inner whitespace and commas as part of the name', () => {
         expect(parseTextRoster('Hopper, Grace')).toEqual(['Hopper, Grace']);
+    });
+
+    it('strips a leading UTF-8 byte-order mark', () => {
+        expect(parseTextRoster('\uFEFFAda Lovelace\nGrace Hopper')).toEqual([
+            'Ada Lovelace',
+            'Grace Hopper',
+        ]);
     });
 });
 
@@ -62,5 +80,11 @@ describe('parseRoster', () => {
         expect(parseRoster({ format: 'text', content: 'Ada Lovelace\nAda Lovelace\n' })).toEqual([
             'Ada Lovelace',
         ]);
+    });
+
+    it('collapses duplicate names in a CSV roster', () => {
+        expect(
+            parseRoster({ format: 'csv', content: 'Ada Lovelace\nAda Lovelace,Grace Hopper\n' }),
+        ).toEqual(['Ada Lovelace']);
     });
 });

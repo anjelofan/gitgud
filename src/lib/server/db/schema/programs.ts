@@ -3,8 +3,8 @@ import { relations, sql } from 'drizzle-orm';
 
 import { users } from './auth.ts';
 
-export const classrooms = pgTable(
-    'classrooms',
+export const programs = pgTable(
+    'programs',
     {
         id: uuid('id').primaryKey().defaultRandom(),
         name: text('name').notNull(),
@@ -18,35 +18,33 @@ export const classrooms = pgTable(
             .defaultNow()
             .$onUpdateFn(() => sql`now()`),
     },
-    (table) => [index('classrooms_created_by_id_idx').on(table.createdById)],
+    (table) => [index('programs_created_by_id_idx').on(table.createdById)],
 );
 
 export const rosterEntries = pgTable(
     'roster_entries',
     {
         id: uuid('id').primaryKey().defaultRandom(),
-        classroomId: uuid('classroom_id')
+        programId: uuid('program_id')
             .notNull()
-            .references(() => classrooms.id, { onDelete: 'cascade' }),
+            .references(() => programs.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     },
-    (table) => [
-        uniqueIndex('roster_entries_classroom_id_name_idx').on(table.classroomId, table.name),
-    ],
+    (table) => [uniqueIndex('roster_entries_program_id_name_idx').on(table.programId, table.name)],
 );
 
-export type Classroom = typeof classrooms.$inferSelect;
+export type Program = typeof programs.$inferSelect;
 export type RosterEntry = typeof rosterEntries.$inferSelect;
 
-export const classroomsRelations = relations(classrooms, ({ many, one }) => ({
+export const programsRelations = relations(programs, ({ many, one }) => ({
     rosterEntries: many(rosterEntries),
-    createdBy: one(users, { fields: [classrooms.createdById], references: [users.id] }),
+    createdBy: one(users, { fields: [programs.createdById], references: [users.id] }),
 }));
 
 export const rosterEntriesRelations = relations(rosterEntries, ({ one }) => ({
-    classroom: one(classrooms, {
-        fields: [rosterEntries.classroomId],
-        references: [classrooms.id],
+    program: one(programs, {
+        fields: [rosterEntries.programId],
+        references: [programs.id],
     }),
 }));

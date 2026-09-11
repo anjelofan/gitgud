@@ -1,7 +1,7 @@
 import * as v from 'valibot';
 
-/** Longest classroom name accepted on the create-classroom form. */
-export const CLASSROOM_NAME_MAX_LENGTH = 120;
+/** Longest program name accepted on the create-program form. */
+export const PROGRAM_NAME_MAX_LENGTH = 120;
 /** GitHub organization logins are at most 39 characters long. */
 export const ORG_LOGIN_MAX_LENGTH = 39;
 /** Upper bound for a pasted or uploaded roster's content size, in characters. */
@@ -9,17 +9,18 @@ export const ROSTER_SOURCE_MAX_LENGTH = 100_000;
 /** Longest single student name accepted inside a roster. */
 export const ROSTER_NAME_MAX_LENGTH = 120;
 
-export const ClassroomNameSchema = v.pipe(
+export const ProgramNameSchema = v.pipe(
     v.string(),
     v.trim(),
-    v.minLength(1, 'Classroom name is required.'),
+    v.minLength(1, 'Program name is required.'),
     v.maxLength(
-        CLASSROOM_NAME_MAX_LENGTH,
-        `Classroom name must be at most ${CLASSROOM_NAME_MAX_LENGTH} characters long.`,
+        PROGRAM_NAME_MAX_LENGTH,
+        `Program name must be at most ${PROGRAM_NAME_MAX_LENGTH} characters long.`,
     ),
 );
 
-const ORG_LOGIN_REGEX = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/u;
+// GitHub logins are alphanumeric with single hyphens between segments.
+const ORG_LOGIN_REGEX = /^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/u;
 
 export const OrgLoginSchema = v.pipe(
     v.string(),
@@ -56,9 +57,9 @@ export const TextRosterSchema = v.object({ format: v.literal('text'), content: v
 export const RosterSchema = v.union([CsvRosterSchema, TextRosterSchema]);
 export type Roster = v.InferOutput<typeof RosterSchema>;
 
-export const CreateClassroomInputSchema = v.pipe(
+export const CreateProgramInputSchema = v.pipe(
     v.object({
-        name: ClassroomNameSchema,
+        name: ProgramNameSchema,
         org: OrgLoginSchema,
         rosterCsv: RosterSourceSchema,
         rosterText: RosterSourceSchema,
@@ -77,7 +78,7 @@ export const CreateClassroomInputSchema = v.pipe(
     }),
 );
 
-export type CreateClassroomInput = v.InferOutput<typeof CreateClassroomInputSchema>;
+export type CreateProgramInput = v.InferOutput<typeof CreateProgramInputSchema>;
 
 export const StudentNameSchema = v.pipe(
     v.string(),
@@ -88,7 +89,7 @@ export const StudentNameSchema = v.pipe(
     ),
 );
 
-/** Upper bound on parsed roster entries per classroom. */
+/** Upper bound on parsed roster entries per program. */
 export const ROSTER_MAX_STUDENTS = 500;
 
 export const StudentRosterSchema = v.pipe(

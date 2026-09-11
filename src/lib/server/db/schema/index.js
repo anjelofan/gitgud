@@ -1,2 +1,2 @@
 export * from './auth.ts';
-export * from './classrooms.ts';
+export * from './programs.ts';

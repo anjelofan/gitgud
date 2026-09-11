@@ -13,10 +13,10 @@ async function rosterSource(formData: FormData, key: string): Promise<string | n
 }
 
 /**
- * Representation-only decode of the create-classroom form; validation happens
- * at the action boundary through `CreateClassroomInputSchema`.
+ * Representation-only decode of the create-program form; validation happens
+ * at the action boundary through `CreateProgramInputSchema`.
  */
-export async function decodeCreateClassroomForm(formData: FormData) {
+export async function decodeCreateProgramForm(formData: FormData) {
     return {
         name: stringField(formData, 'name'),
         org: stringField(formData, 'org'),

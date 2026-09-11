@@ -2,24 +2,24 @@ import * as v from 'valibot';
 import { fail, redirect } from '@sveltejs/kit';
 
 import {
-    CreateClassroomInputSchema,
+    CreateProgramInputSchema,
     ROSTER_MAX_STUDENTS,
     StudentRosterSchema,
-} from '$lib/features/classrooms/contracts';
-import { createClassroomWithRoster } from '$lib/features/classrooms/queries.server';
+} from '$lib/features/programs/contracts';
+import { createProgramWithRoster } from '$lib/features/programs/queries.server';
 import { db } from '$lib/server/db';
-import { decodeCreateClassroomForm } from '$lib/features/classrooms/form.server';
+import { decodeCreateProgramForm } from '$lib/features/programs/form.server';
 import { Logger } from '$lib/server/telemetry/logger';
-import { parseRoster } from '$lib/features/classrooms/roster';
+import { parseRoster } from '$lib/features/programs/roster';
 import { resolveRole } from '$lib/server/auth/roles';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
-const SERVICE_NAME = 'routes.classrooms.new';
+const SERVICE_NAME = 'routes.programs.new';
 const logger = Logger.byName(SERVICE_NAME);
 const tracer = Tracer.byName(SERVICE_NAME);
 
 export function load({ locals: { session } }) {
-    return tracer.span('load-create-classroom', (span) => {
+    return tracer.span('load-create-program', (span) => {
         if (session === null) {
             logger.error('missing session, redirecting to sign-in');
             redirect(303, '/auth/sign-in');
@@ -32,17 +32,21 @@ export function load({ locals: { session } }) {
 
 export const actions = {
     async default({ locals: { session }, request }) {
-        return await tracer.asyncSpan('create-classroom', async (span) => {
+        return await tracer.asyncSpan('create-program', async (span) => {
             if (session === null) {
-                logger.fatal('unauthenticated classroom creation attempt');
-                return fail(401, { message: 'You must be signed in.' });
+                logger.fatal('unauthenticated program creation attempt');
+                return fail(401, {
+                    message: 'You must be signed in.',
+                    issues: [],
+                    data: { name: '', org: '' },
+                });
             }
             span.setAttribute('user.id', session.user.id);
 
-            const submitted = await decodeCreateClassroomForm(await request.formData());
-            const parsed = v.safeParse(CreateClassroomInputSchema, submitted);
+            const submitted = await decodeCreateProgramForm(await request.formData());
+            const parsed = v.safeParse(CreateProgramInputSchema, submitted);
             if (!parsed.success) {
-                logger.fatal('invalid classroom form input', new v.ValiError(parsed.issues), {
+                logger.fatal('invalid program form input', new v.ValiError(parsed.issues), {
                     'user.id': session.user.id,
                 });
                 return fail(422, {
@@ -63,7 +67,7 @@ export const actions = {
                     new v.ValiError(roster.issues),
                     {
                         'user.id': session.user.id,
-                        'classroom.roster_size': students.length,
+                        'program.roster_size': students.length,
                     },
                 );
                 return fail(422, {
@@ -75,32 +79,32 @@ export const actions = {
 
             const { org } = parsed.output;
             const role = await resolveRole(session.githubToken, org);
-            if (role?.kind !== 'teacher') {
+            if (role?.kind !== 'instructor') {
                 logger.fatal('creator is not an owner of the GitHub organization', void 0, {
                     'user.id': session.user.id,
                     'github.org': org,
                 });
                 return fail(403, {
-                    message: `You must be an owner of the ${org} organization on GitHub to create a classroom in it.`,
+                    message: `You must be an owner of the ${org} organization on GitHub to create a program in it.`,
                     issues: [],
                     data: { name: parsed.output.name, org },
                 });
             }
 
-            const classroom = await createClassroomWithRoster(db, {
+            const program = await createProgramWithRoster(db, {
                 ownerId: session.user.id,
                 name: parsed.output.name,
                 org,
                 studentNames: students,
             });
-            span.setAttribute('classroom.id', classroom.id);
-            logger.info('classroom created via form', {
-                'classroom.id': classroom.id,
-                'classroom.org': org,
-                'classroom.roster_size': students.length,
+            span.setAttribute('program.id', program.id);
+            logger.info('program created via form', {
+                'program.id': program.id,
+                'program.org': org,
+                'program.roster_size': students.length,
             });
 
-            redirect(303, `/classrooms/${classroom.id}`);
+            redirect(303, `/programs/${program.id}`);
         });
     },
 };
