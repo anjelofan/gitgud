@@ -17,8 +17,6 @@ A GitHub-based training program platform. Users create training programs from th
 - **Student** — claim a roster entry, create or join a group, accept assignments via invitation link (per-repo collaborator access for an individual or every group member).
 - **Autograding** — powered by a GitHub Actions workflow already included in the template repo; scores are captured on workflow completion via webhook with polling fallback, and failures/missing workflows are surfaced in the dashboard.
 
-See [`FEATURES.md`](FEATURES.md) for the full feature breakdown.
-
 ## Getting started
 
 Prerequisites: Node ≥24, pnpm 11+, Docker.
@@ -63,7 +61,6 @@ Unit/integration tests are colocated with source files as `src/**/*.test.{js,ts}
 ## Documentation
 
 - [`AGENTS.md`](AGENTS.md) — agent guide and working conventions
-- [`FEATURES.md`](FEATURES.md) — full feature list
 - [`TESTING.md`](TESTING.md) — testing commands and layout
 - [`REVIEW.md`](REVIEW.md) — code review expectations
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — topic-routed convention documents
