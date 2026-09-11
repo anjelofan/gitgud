@@ -10,7 +10,7 @@ Use JavaScript (`.js` / `lang="js"`) by default. Only use TypeScript (`.ts` / `l
 
 - **Feature modules** live in `$lib/features/<feature>/`. Cohesion, public entry points, and import direction follow the `vertically-sliced-feature-modules` skill: features never import sibling features' internals, and orchestrators import feature entries, not implementation leaves.
 - **Project-wide UI components** live in `$lib/ui/`. These are presentational building blocks shared across features: no feature logic, no feature imports, no server imports.
-- Behavior needed by multiple features is promoted to an explicit shared module with an owner — not hosted in whichever feature needed it first (see the skill's `shared-code-promotion.md`).
+- Behavior needed by multiple features is promoted to an explicit shared module with an owner — not hosted in whichever feature needed it first (see the skill's `ownership-promotion.md`).
 
 ## Server-only Placement
 
