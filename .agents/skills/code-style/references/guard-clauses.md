@@ -4,24 +4,24 @@ Reject invalid, unavailable, or exceptional paths at the start of a procedure. K
 
 ```typescript
 interface SubmitRequest {
-    isAuthenticated: boolean;
-    isValid: boolean;
-    hasPermission: boolean;
+	isAuthenticated: boolean;
+	isValid: boolean;
+	hasPermission: boolean;
 }
 
 // BAD: the main path is nested behind every condition.
 function submitNested(request: SubmitRequest) {
-    if (request.isAuthenticated)
-        if (request.isValid) if (request.hasPermission) return persist(request);
-    return reject(request);
+	if (request.isAuthenticated)
+		if (request.isValid) if (request.hasPermission) return persist(request);
+	return reject(request);
 }
 
 // GOOD: each exceptional path exits with its own reason.
 function submit(request: SubmitRequest) {
-    if (!request.isAuthenticated) return rejectUnauthenticated(request);
-    if (!request.isValid) return rejectInvalid(request);
-    if (!request.hasPermission) return rejectForbidden(request);
-    return persist(request);
+	if (!request.isAuthenticated) return rejectUnauthenticated(request);
+	if (!request.isValid) return rejectInvalid(request);
+	if (!request.hasPermission) return rejectForbidden(request);
+	return persist(request);
 }
 ```
 

@@ -4,11 +4,11 @@ Default handwritten object contracts to `interface`. When composing object shape
 
 ```typescript
 interface Identified {
-    id: string;
+	id: string;
 }
 
 interface Named {
-    name: string;
+	name: string;
 }
 
 // BAD: an intersection makes the compiler merge every constituent.
@@ -16,7 +16,7 @@ type IntersectedUserRecord = Identified & Named & { createdAt: Date };
 
 // GOOD: extends creates one flat, cacheable object relationship.
 interface ExtendedUserRecord extends Identified, Named {
-    createdAt: Date;
+	createdAt: Date;
 }
 ```
 

@@ -7,7 +7,7 @@ Place state in the smallest component subtree that reads and changes it. Lift st
 
 <!-- ProfilePage.svelte -->
 <script lang="ts">
-    let displayName = $state('');
+	let displayName = $state('');
 </script>
 
 <ProfileEditor bind:displayName />
@@ -25,7 +25,7 @@ Place state in the smallest component subtree that reads and changes it. Lift st
 
 <!-- ProfileEditor.svelte -->
 <script lang="ts">
-    let displayName = $state('');
+	let displayName = $state('');
 </script>
 ```
 

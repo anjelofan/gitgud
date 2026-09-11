@@ -4,29 +4,29 @@ Handle every member of a finite state space. Make new or unknown members fail vi
 
 ```typescript
 const enum Status {
-    Active = 'active',
-    Paused = 'paused',
-    Stopped = 'stopped',
+	Active = 'active',
+	Paused = 'paused',
+	Stopped = 'stopped',
 }
 
 // BAD: every non-active state inherits gray.
 function statusColorWithFallback(status: Status) {
-    if (status === Status.Active) return 'green';
-    return 'gray';
+	if (status === Status.Active) return 'green';
+	return 'gray';
 }
 
 // GOOD: the compiler proves every state is handled.
 function statusColor(status: Status) {
-    switch (status) {
-        case Status.Active:
-            return 'green';
-        case Status.Paused:
-            return 'yellow';
-        case Status.Stopped:
-            return 'gray';
-        default:
-            throw new Error('unhandled status');
-    }
+	switch (status) {
+		case Status.Active:
+			return 'green';
+		case Status.Paused:
+			return 'yellow';
+		case Status.Stopped:
+			return 'gray';
+		default:
+			throw new Error('unhandled status');
+	}
 }
 ```
 

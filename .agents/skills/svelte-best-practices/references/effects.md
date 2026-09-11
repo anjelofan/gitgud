@@ -11,11 +11,11 @@ Do not use `$effect` for derivation, user actions, data fetching, state reset, o
 <!-- BAD: Turn an Event Into a Reactive Signal -->
 
 <script lang="ts">
-    let shouldSave = $state(false);
+	let shouldSave = $state(false);
 
-    $effect(() => {
-        if (shouldSave) void saveDraft();
-    });
+	$effect(() => {
+		if (shouldSave) void saveDraft();
+	});
 </script>
 ```
 
@@ -23,14 +23,14 @@ Do not use `$effect` for derivation, user actions, data fetching, state reset, o
 <!-- GOOD: Synchronize an External Resource -->
 
 <script lang="ts">
-    let title = $state('Dashboard');
+	let title = $state('Dashboard');
 
-    $effect(() => {
-        const previousTitle = document.title;
-        document.title = title;
-        return () => {
-            document.title = previousTitle;
-        };
-    });
+	$effect(() => {
+		const previousTitle = document.title;
+		document.title = title;
+		return () => {
+			document.title = previousTitle;
+		};
+	});
 </script>
 ```

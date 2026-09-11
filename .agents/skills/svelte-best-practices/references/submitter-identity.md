@@ -8,8 +8,8 @@ const action = (event.submitter as HTMLButtonElement).value;
 
 // GOOD: require identity only when distinct operations need it.
 if (!(event.submitter instanceof HTMLButtonElement)) {
-    formError = 'Choose an action.';
-    return;
+	formError = 'Choose an action.';
+	return;
 }
 const action = event.submitter.value;
 ```

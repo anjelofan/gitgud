@@ -10,18 +10,18 @@ const input = v.parse(CreateItem, submitted);
 ```typescript
 // GOOD: return structured validation state to the form.
 export const actions = {
-    default: async ({ request }) => {
-        const submitted = decodeFormData(await request.formData());
-        const parsed = v.safeParse(CreateItem, submitted);
-        if (parsed.success === false) {
-            return fail(400, {
-                issues: parsed.issues,
-                data: { name: submitted.name, amount: submitted.amount },
-            });
-        }
+	default: async ({ request }) => {
+		const submitted = decodeFormData(await request.formData());
+		const parsed = v.safeParse(CreateItem, submitted);
+		if (parsed.success === false) {
+			return fail(400, {
+				issues: parsed.issues,
+				data: { name: submitted.name, amount: submitted.amount },
+			});
+		}
 
-        await db.createItem(parsed.output);
-    },
+		await db.createItem(parsed.output);
+	},
 } satisfies Actions;
 ```
 

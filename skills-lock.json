@@ -1,59 +1,59 @@
 {
-    "version": 1,
-    "skills": {
-        "adversarial-code-review": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/workflows/skills/adversarial-code-review/SKILL.md",
-            "computedHash": "b584de32aa216a012c29efad8a8a83c4e0de324d56f807b30ec3ce1ea0050f24"
-        },
-        "code-style": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/architecture/skills/code-style/SKILL.md",
-            "computedHash": "8aa5e6e7c484e20afac1f1b97c55e7c277065f5de2e9c3831fd5d99ec8cb2631"
-        },
-        "drizzle-orm-best-practices": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/drizzle/skills/drizzle-orm-best-practices/SKILL.md",
-            "computedHash": "2ce1f39ffd62080399e6d83835ad4237daec3555e44b4525214d765514d0fcd9"
-        },
-        "open-telemetry-best-practices": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/observability/skills/open-telemetry-best-practices/SKILL.md",
-            "computedHash": "557da82db6641d722a9ada151e72e9c9cbacba6edcd8ad3473d0c36635fdc4d4"
-        },
-        "svelte-best-practices": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/svelte/skills/svelte-best-practices/SKILL.md",
-            "computedHash": "a08d9e172d58928e00cddf2fea627fba1f14c8924b976c5a0b34b2ad1aec6369"
-        },
-        "testing-guidelines": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/architecture/skills/testing-guidelines/SKILL.md",
-            "computedHash": "81c0009755f05734195282a97326fd1cda6be7d87d17037880361cbce3b7dc68"
-        },
-        "typescript-best-practices": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/typescript/skills/typescript-best-practices/SKILL.md",
-            "computedHash": "6085d9e0855b40bb7c13d72015a7f97413af3540479b20188b52de152e3874a2"
-        },
-        "valibot-best-practices": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/typescript/skills/valibot-best-practices/SKILL.md",
-            "computedHash": "58d9e904026a5df1d5408f6c28d975160cf066dfc42dc5712f3b7782aa5c83ea"
-        },
-        "vertically-sliced-feature-modules": {
-            "source": "BastiDood/skills",
-            "sourceType": "github",
-            "skillPath": "plugins/architecture/skills/vertically-sliced-feature-modules/SKILL.md",
-            "computedHash": "32891f3f402049be7036821f6b78cb121a5ac7b2166e7b323885dd25ff310e60"
-        }
+  "version": 1,
+  "skills": {
+    "adversarial-code-review": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/workflows/skills/adversarial-code-review/SKILL.md",
+      "computedHash": "b584de32aa216a012c29efad8a8a83c4e0de324d56f807b30ec3ce1ea0050f24"
+    },
+    "code-style": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/architecture/skills/code-style/SKILL.md",
+      "computedHash": "8aa5e6e7c484e20afac1f1b97c55e7c277065f5de2e9c3831fd5d99ec8cb2631"
+    },
+    "drizzle-orm-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/drizzle/skills/drizzle-orm-best-practices/SKILL.md",
+      "computedHash": "2ce1f39ffd62080399e6d83835ad4237daec3555e44b4525214d765514d0fcd9"
+    },
+    "open-telemetry-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/observability/skills/open-telemetry-best-practices/SKILL.md",
+      "computedHash": "557da82db6641d722a9ada151e72e9c9cbacba6edcd8ad3473d0c36635fdc4d4"
+    },
+    "svelte-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/svelte/skills/svelte-best-practices/SKILL.md",
+      "computedHash": "a08d9e172d58928e00cddf2fea627fba1f14c8924b976c5a0b34b2ad1aec6369"
+    },
+    "testing-guidelines": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/architecture/skills/testing-guidelines/SKILL.md",
+      "computedHash": "81c0009755f05734195282a97326fd1cda6be7d87d17037880361cbce3b7dc68"
+    },
+    "typescript-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/typescript/skills/typescript-best-practices/SKILL.md",
+      "computedHash": "2e0108600c12f8157a91942c95ef08b3fe24dac93cf23a6c8b78017b0c345568"
+    },
+    "valibot-best-practices": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/typescript/skills/valibot-best-practices/SKILL.md",
+      "computedHash": "58d9e904026a5df1d5408f6c28d975160cf066dfc42dc5712f3b7782aa5c83ea"
+    },
+    "vertically-sliced-feature-modules": {
+      "source": "BastiDood/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/architecture/skills/vertically-sliced-feature-modules/SKILL.md",
+      "computedHash": "b211b9617f210fea4ba4294674c75379ef48a7dac5136a38ff7ace918492b5c2"
     }
+  }
 }

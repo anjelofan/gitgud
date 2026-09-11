@@ -11,7 +11,7 @@ Model pending work as form-wide state. Disable every submit control while submis
 <button type="submit" disabled={isSubmitting}>Save Draft</button>
 
 {#if isSubmitting}
-    <p role="status">Saving changes...</p>
+	<p role="status">Saving changes...</p>
 {/if}
 ```
 

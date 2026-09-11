@@ -8,8 +8,8 @@ Prefer the schema's database-default helper for creation timestamps when the sel
 import { integer, pgTable, timestamp } from 'drizzle-orm/pg-core';
 
 const users = pgTable('users', {
-    id: integer('id').primaryKey(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+	id: integer('id').primaryKey(),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 ```
 
@@ -27,9 +27,9 @@ await db.update(users).set({ updatedAt: new Date() }).where(eq(users.id, userId)
 import { eq, sql } from 'drizzle-orm';
 
 await db
-    .update(users)
-    .set({ updatedAt: sql`now()` })
-    .where(eq(users.id, userId));
+	.update(users)
+	.set({ updatedAt: sql`now()` })
+	.where(eq(users.id, userId));
 ```
 
 Use the dialect equivalent when `now()` is unavailable. SQLite uses `CURRENT_TIMESTAMP`. A schema callback such as `$onUpdateFn` is compatible with this rule only when it returns a database SQL expression instead of an application timestamp.

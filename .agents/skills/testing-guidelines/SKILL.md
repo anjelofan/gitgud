@@ -51,8 +51,8 @@ Do not preserve a useless test for coverage. Coverage is evidence of execution, 
 Follow the guidelines below. Read each linked reference that applies before writing, approving, or retaining tests.
 
 1. Test only behavior that the project owns.
-    - [Treat documented third-party dependencies as already verified.](./references/third-party-dependencies.md)
-    - [Exclude tests that only prove delegation through transparent wrappers.](./references/transparent-wrappers.md)
+   - [Treat documented third-party dependencies as already verified.](./references/third-party-dependencies.md)
+   - [Exclude tests that only prove delegation through transparent wrappers.](./references/transparent-wrappers.md)
 2. Require independent evidence that a test protects a project-owned invariant.
-    - [Reject circular fixtures and substituted-boundary claims with the test-double admission diagnostics.](./references/test-double-admission.md)
-    - [Match each defect to an observable test level, including no test when the available level cannot provide meaningful evidence.](./references/test-level-selection.md)
+   - [Reject circular fixtures and substituted-boundary claims with the test-double admission diagnostics.](./references/test-double-admission.md)
+   - [Match each defect to an observable test level, including no test when the available level cannot provide meaningful evidence.](./references/test-level-selection.md)

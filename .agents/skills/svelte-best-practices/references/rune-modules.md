@@ -8,18 +8,18 @@ let selectedId = $state<string | undefined>();
 
 // GOOD: one cohesive abstraction owns its reactive state and operations.
 export class Selection {
-    #selectedId = $state<string | undefined>();
+	#selectedId = $state<string | undefined>();
 
-    select(id: string) {
-        this.#selectedId = id;
-    }
+	select(id: string) {
+		this.#selectedId = id;
+	}
 
-    clear() {
-        this.#selectedId = void 0;
-    }
+	clear() {
+		this.#selectedId = void 0;
+	}
 
-    get selectedId() {
-        return this.#selectedId;
-    }
+	get selectedId() {
+		return this.#selectedId;
+	}
 }
 ```

@@ -5,19 +5,19 @@ Produce pages incrementally. Validate each page before yielding it. Let the cons
 ```typescript
 // BAD: the producer eagerly consumes every page.
 async function listAllItems() {
-    const results: Item[] = [];
-    for await (const page of pages()) results.push(...page.items);
-    return results;
+	const results: Item[] = [];
+	for await (const page of pages()) results.push(...page.items);
+	return results;
 }
 
 // GOOD: expose one validated page at a time.
 async function* pages() {
-    let cursor: string | undefined;
-    do {
-        const page = validatePage(await fetchPage(cursor));
-        yield page;
-        cursor = page.nextCursor;
-    } while (typeof cursor !== 'undefined');
+	let cursor: string | undefined;
+	do {
+		const page = validatePage(await fetchPage(cursor));
+		yield page;
+		cursor = page.nextCursor;
+	} while (typeof cursor !== 'undefined');
 }
 ```
 

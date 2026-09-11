@@ -4,11 +4,11 @@ Treat an impossible-state claim as a commitment. Enforce the invariant at the bo
 
 ```typescript
 // BAD: silent recovery contradicts the invariant.
-let selected = items.find((item) => item.id === selectedId);
+let selected = items.find(item => item.id === selectedId);
 if (typeof selected === 'undefined') [selected] = items;
 
 // GOOD: fail at the violated assumption.
-const selectedItem = items.find((item) => item.id === selectedId);
+const selectedItem = items.find(item => item.id === selectedId);
 if (typeof selectedItem === 'undefined') throw new Error(`Selected item must exist: ${selectedId}`);
 ```
 

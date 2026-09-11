@@ -9,11 +9,11 @@ import { decodeFormData } from '$lib/form-data.server';
 // GOOD: only server actions import and run the helper.
 // form-data.server.ts
 export function decodeFormData(formData: FormData) {
-    return decode(formData, {
-        numbers: ['amount', 'quantity'],
-        dates: ['datedAt', 'expiresAt'],
-        arrays: ['tags', 'categories'],
-    });
+	return decode(formData, {
+		numbers: ['amount', 'quantity'],
+		dates: ['datedAt', 'expiresAt'],
+		arrays: ['tags', 'categories'],
+	});
 }
 ```
 

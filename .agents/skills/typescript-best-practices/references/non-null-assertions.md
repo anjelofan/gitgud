@@ -4,12 +4,12 @@ Do not use the `!` operator to claim that a possibly absent value exists. Guard 
 
 ```typescript
 // BAD: hides absence from the compiler and runtime.
-const user = users.find((user) => user.id === id)!;
+const user = users.find(user => user.id === id)!;
 
 // GOOD: make the required invariant explicit.
-const user = users.find((user) => user.id === id);
+const user = users.find(user => user.id === id);
 if (typeof user === 'undefined') {
-    throw new Error(`User not found: ${id}`);
+	throw new Error(`User not found: ${id}`);
 }
 ```
 

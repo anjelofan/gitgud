@@ -6,8 +6,8 @@ Import Valibot as a namespace. The namespace keeps schema constructors visibly o
 import * as v from 'valibot';
 
 const User = v.object({
-    id: v.string(),
-    name: v.string(),
+	id: v.string(),
+	name: v.string(),
 });
 ```
 

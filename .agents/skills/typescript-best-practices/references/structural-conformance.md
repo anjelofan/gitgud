@@ -5,8 +5,8 @@ Use `satisfies` when a value must prove a required shape while retaining its own
 ```typescript
 // BAD: Widen the Value With Its Conformance Type
 const routes: Record<string, `/${string}`> = {
-    users: '/users',
-    projects: '/projects',
+	users: '/users',
+	projects: '/projects',
 };
 
 const usersRoute: '/users' = routes.users;
@@ -16,8 +16,8 @@ const usersRoute: '/users' = routes.users;
 ```typescript
 // GOOD: Check the Shape While Retaining Inference
 const routes = {
-    users: '/users',
-    projects: '/projects',
+	users: '/users',
+	projects: '/projects',
 } satisfies Record<string, `/${string}`>;
 
 const usersRoute: '/users' = routes.users;

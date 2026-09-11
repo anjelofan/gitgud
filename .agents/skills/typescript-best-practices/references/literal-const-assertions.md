@@ -8,7 +8,7 @@ const requestMethods = ['GET', 'POST'] as const;
 
 // GOOD: preserve literal values in a constant lookup.
 const statusColors = {
-    success: 'green',
-    failed: 'red',
+	success: 'green',
+	failed: 'red',
 } as const;
 ```

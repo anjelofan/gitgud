@@ -6,13 +6,13 @@ Derive values with `$derived`; do not synchronize one piece of reactive state in
 <!-- BAD: Maintain a Second Writable Copy -->
 
 <script lang="ts">
-    let firstName = $state('Ada');
-    let lastName = $state('Lovelace');
-    let fullName = $state('');
+	let firstName = $state('Ada');
+	let lastName = $state('Lovelace');
+	let fullName = $state('');
 
-    $effect(() => {
-        fullName = `${firstName} ${lastName}`;
-    });
+	$effect(() => {
+		fullName = `${firstName} ${lastName}`;
+	});
 </script>
 ```
 
@@ -20,8 +20,8 @@ Derive values with `$derived`; do not synchronize one piece of reactive state in
 <!-- GOOD: Keep One Source of Truth -->
 
 <script lang="ts">
-    let firstName = $state('Ada');
-    let lastName = $state('Lovelace');
-    const fullName = $derived(`${firstName} ${lastName}`);
+	let firstName = $state('Ada');
+	let lastName = $state('Lovelace');
+	const fullName = $derived(`${firstName} ${lastName}`);
 </script>
 ```
