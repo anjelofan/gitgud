@@ -231,8 +231,8 @@
                     "primaryKey": false,
                     "notNull": true
                 },
-                "created_by_id": {
-                    "name": "created_by_id",
+                "instructor_id": {
+                    "name": "instructor_id",
                     "type": "uuid",
                     "primaryKey": false,
                     "notNull": true
@@ -253,11 +253,11 @@
                 }
             },
             "indexes": {
-                "programs_created_by_id_idx": {
-                    "name": "programs_created_by_id_idx",
+                "programs_instructor_id_idx": {
+                    "name": "programs_instructor_id_idx",
                     "columns": [
                         {
-                            "expression": "created_by_id",
+                            "expression": "instructor_id",
                             "isExpression": false,
                             "asc": true,
                             "nulls": "last"
@@ -270,11 +270,11 @@
                 }
             },
             "foreignKeys": {
-                "programs_created_by_id_users_id_fk": {
-                    "name": "programs_created_by_id_users_id_fk",
+                "programs_instructor_id_users_id_fk": {
+                    "name": "programs_instructor_id_users_id_fk",
                     "tableFrom": "programs",
                     "tableTo": "users",
-                    "columnsFrom": ["created_by_id"],
+                    "columnsFrom": ["instructor_id"],
                     "columnsTo": ["id"],
                     "onDelete": "cascade",
                     "onUpdate": "no action"
