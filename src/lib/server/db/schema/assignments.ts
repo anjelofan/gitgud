@@ -1,9 +1,11 @@
 import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 import { programs } from './programs.ts';
 
-export const assignments = pgTable('assignments',{
+export const assignments = pgTable(
+    'assignments',
+    {
         id: uuid('id').primaryKey().defaultRandom(),
         programId: uuid('program_id')
             .notNull()
@@ -18,14 +20,7 @@ export const assignments = pgTable('assignments',{
             .defaultNow()
             .$onUpdateFn(() => sql`now()`),
     },
-    (table) => [index('assignments_program_id_idx').on(table.programId)]
-)
+    (table) => [index('assignments_program_id_idx').on(table.programId)],
+);
 
-export type Assignment = typeof assignments.$inferSelect
-
-export const assignmentRelations = relations(assignments, ({ one }) => ({
-    program: one(programs, {
-        fields: [assignments.programId],
-        references: [programs.id]
-    })
-}))
+export type Assignment = typeof assignments.$inferSelect;
