@@ -69,7 +69,7 @@ export async function load({ locals: { session }, params }) {
 
 
 export const actions = {
-    async createAssignment({locals: {session}, params, request }) {
+    async 'create-assignment'({locals: {session}, params, request }) {
         return await tracer.asyncSpan('create-assignment-action', async(span) => {
             if (session === null) {
                 logger.fatal('unauthenticated assignment creation attempt');
