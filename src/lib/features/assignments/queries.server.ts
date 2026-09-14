@@ -81,7 +81,10 @@ export async function getAssignmentForInstructor(
         span.setAttributes({ 'assignment.id': assignmentId, 'user.id': instructorId });
 
         const [row] = await db
-            .select({ assignment: assignments })
+            .select({
+                assignment: assignments,
+                program: { name: programs.name, org: programs.org },
+            })
             .from(assignments)
             .innerJoin(programs, eq(assignments.programId, programs.id))
             .where(
@@ -89,6 +92,6 @@ export async function getAssignmentForInstructor(
             );
         if (typeof row === 'undefined') return null;
 
-        return row.assignment;
+        return { assignment: row.assignment, program: row.program };
     });
 }
