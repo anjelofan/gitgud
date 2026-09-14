@@ -1,10 +1,12 @@
 import * as v from 'valibot';
-import { error, redirect } from '@sveltejs/kit';
+import { error, fail, redirect, type Actions } from '@sveltejs/kit';
 
 import { db } from '$lib/server/db';
 import { getProgramForInstructor } from '$lib/features/programs/queries.server';
+import { createAssignmentForProgram, listAssignmentsForProgram } from '$lib/features/assignments/queries.server.js';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
+import { listOrgRepos } from '$lib/server/github/repos.js';
 
 const SERVICE_NAME = 'routes.programs.id';
 const logger = Logger.byName(SERVICE_NAME);
@@ -39,9 +41,25 @@ export async function load({ locals: { session }, params }) {
         }
 
         const { name, org } = result.program;
+
+        let repositories: string[] = [];
+        if (session.githubToken !== null) {
+            try{{
+                repositories = (await listOrgRepos(session.githubToken, org)).map((repo) => repo.name)
+            }}
+            catch (error) {
+                logger.warn('organization repositories not listed', {'program.id': programId.output})
+            }
+        }
+        const assignments = await listAssignmentsForProgram(db, programId.output)
+
         return {
             program: { name, org },
             students: result.students.map(({ id, name }) => ({ id, name })),
+            assignments,
+            repositories
         };
     });
 }
+
+
