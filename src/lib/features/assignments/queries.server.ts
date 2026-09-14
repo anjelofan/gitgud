@@ -21,7 +21,7 @@ export interface CreateAssignmentArgs {
 }
 
 /**  
- * Creates a new assignment for a a program after verifying instructor ownership 
+ * Creates a new assignment for a program after verifying instructor ownership 
  */
 export async function createAssignmentForProgram(db: DbConnection, args: CreateAssignmentArgs) {
     return await tracer.asyncSpan('create-assignment', async (span) => {
