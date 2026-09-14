@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { error, fail, redirect, type Actions } from '@sveltejs/kit';
+import { error, fail, redirect} from '@sveltejs/kit';
 
 import { db } from '$lib/server/db';
 import { getProgramForInstructor } from '$lib/features/programs/queries.server';
@@ -47,15 +47,15 @@ export async function load({ locals: { session }, params }) {
 
         const { name, org } = result.program;
 
-        let repositories: string[] = [];
-        if (session.githubToken !== null) {
-            try{
-                repositories = (await listOrgRepos(session.githubToken, org)).map((repo) => repo.name)
+        const repositories = await (async () => {
+            if (session.githubToken === null) return [];
+            try {
+                return (await listOrgRepos(session.githubToken, org)).map((repo) => repo.name);
+            } catch {
+                logger.warn('organization repositories not listed', { 'program.id': programId.output });
+                return [];
             }
-            catch {
-                logger.warn('organization repositories not listed', {'program.id': programId.output})
-            }
-        }
+        })();
         const assignments = await listAssignmentsForProgram(db, programId.output)
 
         return {
@@ -68,7 +68,7 @@ export async function load({ locals: { session }, params }) {
 }
 
 
-export const actions: Actions = {
+export const actions = {
     async createAssignment({locals: {session}, params, request }) {
         return await tracer.asyncSpan('create-assignment-action', async(span) => {
             if (session === null) {
