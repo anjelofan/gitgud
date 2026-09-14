@@ -49,14 +49,26 @@
         <div>
             <label>
                 <p>Assignment Name</p>
-                <input type="text" name="name" maxlength="120" required />
+
+                <input
+                    type="text"
+                    name="name"
+                    maxlength="120"
+                    value={form?.data?.name ?? ''}
+                    required
+                />
             </label>
         </div>
 
         <div>
             <label>
                 <p>Deadline</p>
-                <input type="datetime-local" name="deadline" required />
+                <input
+                    type="datetime-local"
+                    name="deadline"
+                    required
+                    value={form?.data?.deadline ?? ''}
+                />
             </label>
         </div>
 
