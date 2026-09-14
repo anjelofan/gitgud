@@ -1,6 +1,8 @@
 import * as v from 'valibot';
 
 export const ASSIGNMENT_NAME_MAX_LENGTH = 120;
+export const TEMPLATE_REPO_MAX_LENGTH = 120;
+
 
 export const AssignmentNameSchema = v.pipe(
     v.string(),
@@ -28,7 +30,7 @@ export const TemplateRepoSchema = v.pipe(
     v.trim(),
     v.minLength(1, 'Repository template is required.'),
     v.maxLength(
-        100,
+        TEMPLATE_REPO_MAX_LENGTH,
         'Repository name must be at most 100 characters long.',
     ),
 );
