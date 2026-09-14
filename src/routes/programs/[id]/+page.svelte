@@ -67,7 +67,7 @@
                     <p>No available repositories in organization</p>
                 {:else}
                     <select name="templateRepo" required>
-                        {#each repositories as r}
+                        {#each repositories as r (r)}
                             <option value={r}> {r} </option>
                         {/each}
                     </select>
@@ -78,7 +78,7 @@
     </form>
 
     <h2>Assignments</h2>
-    {#each assignments as a}
+    {#each assignments as a (a.id)}
         <a href={resolve('/assignments/[id]', { id: a.id })}> {a.name}</a>
     {/each}
 
