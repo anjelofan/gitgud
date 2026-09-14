@@ -31,4 +31,9 @@
 </p>
 
 <p>Invite link: /invite/{assignment.inviteToken}</p>
-<p>Template repo: {assignment.templateRepo}</p>
+<p>
+    Template repo:
+    <a href={`https://github.com/${program.org}/${assignment.templateRepo}`}>
+        {assignment.templateRepo}</a
+    >
+</p>
