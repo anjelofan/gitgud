@@ -79,7 +79,7 @@
 
     <h2>Assignments</h2>
     {#each assignments as a}
-        <p>{a.name}</p>
+        <a href={resolve('/assignments/[id]', { id: a.id })}> {a.name}</a>
     {/each}
 
     <h2>Student roster</h2>
