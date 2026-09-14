@@ -1,7 +1,7 @@
 import * as v from 'valibot';
 
 export const ASSIGNMENT_NAME_MAX_LENGTH = 120;
-export const TEMPLATE_REPO_MAX_LENGTH = 120;
+export const TEMPLATE_REPO_MAX_LENGTH = 100;
 
 
 export const AssignmentNameSchema = v.pipe(
