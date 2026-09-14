@@ -11,7 +11,7 @@
         data: {
             program: Pick<Program, 'name' | 'org'>;
             students: Pick<RosterEntry, 'id' | 'name'>[];
-            assignments: Pick<Assignment, 'id' | 'name' | 'deadline'>[];
+            assignments: Pick<Assignment, 'id' | 'name'>[];
             repositories: string[];
         };
         form: {
