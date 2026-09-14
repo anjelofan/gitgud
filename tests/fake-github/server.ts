@@ -112,7 +112,7 @@ export class FakeGithub {
         this.#memberships.clear();
         this.#codes.clear();
         this.#refreshTokens.clear();
-        this.#repos.clear
+        this.#repos.clear()
     }
 
     async listen(port = resolveFakeGitHubPort()) {
