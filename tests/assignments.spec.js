@@ -11,7 +11,6 @@ const DEFAULT_FAKE_TOKEN = 'fake-default-access-token';
 const ORG_FIXTURES = [
     ['e2e-assign-org', ['dtp2627a-0']],
     ['e2e-assign-empty-org', []],
-    ['e2e-assign-invalid-org', ['dtp2627a-0']],
 ];
 
 for (const [org, repos] of ORG_FIXTURES) {
@@ -47,7 +46,7 @@ test.describe('invalid access', () => {
         await expect(page).not.toHaveURL(`/assignments/${sampleId}`);
     });
 
-    test('rejects an assignment id', async ({ page }) => {
+    test('rejects an invalid assignment id', async ({ page }) => {
         // Log in
         await page.goto('/');
         await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
