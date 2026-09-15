@@ -24,11 +24,10 @@ for (const [org, repos] of ORG_FIXTURES) {
     await fakeGithub('registerRepos', { token: DEFAULT_FAKE_TOKEN, org, repos });
 }
 
-
 /** Creates a program each test
  * @param {import('@playwright/test').Page} page
  * @param {object} options
- * @param {string} options.name 
+ * @param {string} options.name
  * @param {string} options.org
  * @returns {Promise<void>}
  */
@@ -40,16 +39,15 @@ async function createProgram(page, { name, org }) {
     await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 }
 
-
 test.describe('invalid access', () => {
-    const sampleId = '00000000-1111-2222-3333-444444444444'
+    const sampleId = '00000000-1111-2222-3333-444444444444';
 
-    test('rejects access from a user not logged in', async({ page }) => {
-        await page.goto(`/assignments/${sampleId}`)
+    test('rejects access from a user not logged in', async ({ page }) => {
+        await page.goto(`/assignments/${sampleId}`);
         await expect(page).not.toHaveURL(`/assignments/${sampleId}`);
-    })
+    });
 
-    test('rejects an assignment id', async({ page }) => {
+    test('rejects an assignment id', async ({ page }) => {
         // Log in
         await page.goto('/');
         await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
@@ -57,9 +55,8 @@ test.describe('invalid access', () => {
 
         const response = await page.goto('/assignments/invalid-id');
         expect(response?.status()).toBe(404);
-    })
-
-})
+    });
+});
 
 test.describe('assignment creation journey', () => {
     test.beforeEach(async ({ page }) => {
@@ -70,10 +67,10 @@ test.describe('assignment creation journey', () => {
 
     test('creates an assignment from a seeded organization template', async ({ page }) => {
         const programName = 'test program';
-        const org = 'e2e-assign-org'
-        await createProgram(page, { name: programName, org: org });
+        const org = 'e2e-assign-org';
+        await createProgram(page, { name: programName, org });
 
-        const name = 'Test Assignment'
+        const name = 'Test Assignment';
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         const formattedDeadline = tomorrow.toISOString().slice(0, 16);
@@ -87,9 +84,11 @@ test.describe('assignment creation journey', () => {
         await expect(page).toHaveURL(/\/assignments\/[0-9a-f-]{36}$/u);
 
         // Assignment dashboard is visible
-        await expect(page.getByRole('heading', { name: name })).toBeVisible();
+        await expect(page.getByRole('heading', { name })).toBeVisible();
         await expect(page.getByText(`GitHub organization: ${org}`)).toBeVisible();
-        await expect(page.getByText(new RegExp(`Deadline:.*${tomorrow.getFullYear()}`))).toBeVisible();
+        await expect(
+            page.getByText(new RegExp(`Deadline:.*${tomorrow.getFullYear()}`, 'u')),
+        ).toBeVisible();
         await expect(page.getByText(/Invite link: \/invite\//u)).toBeVisible();
         await expect(page.getByText('Template repo: dtp2627a-0 ')).toBeVisible();
     });
@@ -102,5 +101,4 @@ test.describe('assignment creation journey', () => {
 
         await expect(page.getByText('No available repositories in organization')).toBeVisible();
     });
-
 });

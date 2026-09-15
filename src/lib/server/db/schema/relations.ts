@@ -1,8 +1,8 @@
 import { relations } from 'drizzle-orm';
 
+import { assignments } from './assignments.ts';
 import { githubTokens, sessions, users } from './auth.ts';
 import { programs, rosterEntries } from './programs.ts';
-import { assignments } from './assignments.ts';
 
 export const usersRelations = relations(users, ({ many, one }) => ({
     sessions: many(sessions),

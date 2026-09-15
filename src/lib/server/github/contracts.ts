@@ -18,4 +18,4 @@ export const OAuthTokenResponseSchema = v.object({
 export type OAuthTokenResponse = v.InferOutput<typeof OAuthTokenResponseSchema>;
 
 export const OrgReposSchema = v.array(v.object({ name: v.string() }));
-export type OrgRepos = v.InferOutput<typeof OrgReposSchema>
+export type OrgRepos = v.InferOutput<typeof OrgReposSchema>;

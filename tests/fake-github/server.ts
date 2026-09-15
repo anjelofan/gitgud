@@ -48,7 +48,7 @@ export class FakeGithub {
     #codes = new Map<string, { token: string }>();
     #refreshTokens = new Map<string, { token: string }>();
     #server: Server | null = null;
-    #repos = new Map<string, {status: number; body: unknown}>();
+    #repos = new Map<string, { status: number; body: unknown }>();
     defaultToken = 'fake-default-access-token';
 
     registerUser({ token, user = DEFAULT_USER }: { token: string; user?: FakeUser }) {
@@ -112,7 +112,7 @@ export class FakeGithub {
         this.#memberships.clear();
         this.#codes.clear();
         this.#refreshTokens.clear();
-        this.#repos.clear()
+        this.#repos.clear();
     }
 
     async listen(port = resolveFakeGitHubPort()) {
@@ -188,7 +188,7 @@ export class FakeGithub {
             issueRefreshToken: (args) =>
                 this.issueRefreshToken(args as { token: string; value?: string }),
             reset: () => this.reset(),
-            registerRepos: (args) => 
+            registerRepos: (args) =>
                 this.registerRepos(args as { token: string; org: string; repos: string[] }),
             registerReposError: (args) =>
                 this.registerReposError(args as { token: string; org: string; status: number }),
@@ -253,7 +253,9 @@ export class FakeGithub {
     }
 
     #orgRepos(token: string | null, pathname: string, response: ServerResponse) {
-        const org = decodeURIComponent(pathname.replace(/^\/orgs\/([^/]+)\/repos$/, '$1'));
+        const org = decodeURIComponent(
+            pathname.replace(/^\/orgs\/(?<org>[^/]+)\/repos$/u, '$<org>'),
+        );
         const repos = this.#repos.get(`${token}\n${org}`);
         if (typeof repos === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });

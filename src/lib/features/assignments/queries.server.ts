@@ -3,8 +3,8 @@ import { randomBytes } from 'node:crypto';
 
 import { and, desc, eq } from 'drizzle-orm';
 
-import type { DbConnection } from '$lib/server/db';
 import { assignments, programs } from '$lib/server/db/schema';
+import type { DbConnection } from '$lib/server/db';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
@@ -20,8 +20,8 @@ export interface CreateAssignmentArgs {
     templateRepo: string;
 }
 
-/**  
- * Creates a new assignment for a program after verifying instructor ownership 
+/**
+ * Creates a new assignment for a program after verifying instructor ownership
  */
 export async function createAssignmentForProgram(db: DbConnection, args: CreateAssignmentArgs) {
     return await tracer.asyncSpan('create-assignment', async (span) => {
@@ -87,9 +87,7 @@ export async function getAssignmentForInstructor(
             })
             .from(assignments)
             .innerJoin(programs, eq(assignments.programId, programs.id))
-            .where(
-                and(eq(assignments.id, assignmentId), eq(programs.instructorId, instructorId)),
-            );
+            .where(and(eq(assignments.id, assignmentId), eq(programs.instructorId, instructorId)));
         if (typeof row === 'undefined') return null;
 
         return { assignment: row.assignment, program: row.program };

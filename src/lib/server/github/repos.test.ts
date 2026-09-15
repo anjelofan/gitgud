@@ -3,8 +3,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { fakeGithub } from '$tests/fake-github/client';
 
-import { OrgReposSchema } from './contracts';
 import { listOrgRepos } from './repos';
+import { OrgReposSchema } from './contracts';
 
 const TOKEN = 'repos-access-token';
 
