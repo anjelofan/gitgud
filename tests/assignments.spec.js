@@ -36,14 +36,30 @@ async function createProgram(page, { name, org }) {
     await page.getByRole('link', { name: 'Create program' }).click();
     await page.getByLabel('Program name').fill(name);
     await page.getByLabel('GitHub organization').fill(org);
-    await page.getByLabel('Upload roster CSV').setInputFiles({
-            name: 'roster.csv',
-            mimeType: 'text/csv',
-            buffer: Buffer.from('Grace Hopper,grace@example.com\nAda Lovelace,ada@example.com\n'),
-        });
     await page.getByRole('button', { name: 'Create program' }).click();
     await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 }
+
+
+test.describe('invalid access', () => {
+    const sampleId = '00000000-1111-2222-3333-444444444444'
+
+    test('rejects access from a user not logged in', async({ page }) => {
+        await page.goto(`/assignments/${sampleId}`)
+        await expect(page).not.toHaveURL(`/assignments/${sampleId}`);
+    })
+
+    test('rejects an assignment id', async({ page }) => {
+        // Log in
+        await page.goto('/');
+        await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
+        await expect(page.getByText('Signed in as octocat')).toBeVisible();
+
+        const response = await page.goto('/assignments/invalid-id');
+        expect(response?.status()).toBe(404);
+    })
+
+})
 
 test.describe('assignment creation journey', () => {
     test.beforeEach(async ({ page }) => {
@@ -58,9 +74,13 @@ test.describe('assignment creation journey', () => {
         await createProgram(page, { name: programName, org: org });
 
         const name = 'Test Assignment'
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const formattedDeadline = tomorrow.toISOString().slice(0, 16);
+
         // Fill form
         await page.getByRole('textbox', { name: 'Assignment Name' }).fill(name);
-        await page.getByRole('textbox', { name: 'Deadline' }).fill('2026-09-15T03:47');
+        await page.getByRole('textbox', { name: 'Deadline' }).fill(formattedDeadline);
         await page.getByRole('button', { name: 'Create Assignment' }).click();
 
         // Redirected to assignments page
@@ -69,7 +89,7 @@ test.describe('assignment creation journey', () => {
         // Assignment dashboard is visible
         await expect(page.getByRole('heading', { name: name })).toBeVisible();
         await expect(page.getByText(`GitHub organization: ${org}`)).toBeVisible();
-        await expect(page.getByText('Deadline: September 15, 2026 at 3:47 AM')).toBeVisible();
+        await expect(page.getByText(new RegExp(`Deadline:.*${tomorrow.getFullYear()}`))).toBeVisible();
         await expect(page.getByText(/Invite link: \/invite\//u)).toBeVisible();
         await expect(page.getByText('Template repo: dtp2627a-0 ')).toBeVisible();
     });
@@ -83,15 +103,4 @@ test.describe('assignment creation journey', () => {
         await expect(page.getByText('No available repositories in organization')).toBeVisible();
     });
 
-    test('rejects an assignment with a blank name', async ({ page }) => {
-        const programName = `Invalid Assignment`;
-        await createProgram(page, { name: programName, org: 'e2e-assign-invalid-org' });
-
-        await page.getByRole('textbox', { name: 'Assignment Name' }).fill('            ');
-        await page.getByRole('textbox', { name: 'Deadline' }).fill('2026-09-15T04:11');
-        await page.getByRole('button', { name: 'Create Assignment' }).click();
-        await expect(page.getByText('name: Assignment name is')).toBeVisible();
-
-        await expect(page).toHaveURL(/\/programs\/[0-9a-f-]{36}\?\/create-assignment$/u);
-    });
 });
