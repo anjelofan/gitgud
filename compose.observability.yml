@@ -31,9 +31,9 @@ services:
 
 secrets:
   oo_root_email:
-    file: ${OPENOBSERVE_SECRETS_DIR:-./openobserve/secrets/dev}/root_user_email
+    file: ${OPENOBSERVE_SECRETS_DIR:-./openobserve/secrets/dev}/admin_email
   oo_root_password:
-    file: ${OPENOBSERVE_SECRETS_DIR:-./openobserve/secrets/dev}/root_user_password
+    file: ${OPENOBSERVE_SECRETS_DIR:-./openobserve/secrets/dev}/admin_password
 
 volumes:
   openobserve-data:
