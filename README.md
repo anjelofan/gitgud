@@ -35,28 +35,27 @@ Environment variables (see [`.env.example`](.env.example)):
 - `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `SESSION_SECRET` (required) — GitHub app credentials
 - `FAKE_GITHUB_PORT` (optional) — for testing; set this to point the tests to a fake GitHub server at `http://localhost:${FAKE_GITHUB_PORT}`.
 - `GITHUB_ORG` (optional) — GitHub org used for teacher-role resolution until the classroom feature supplies org context per classroom; leave unset to resolve no role.
-- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export to the local OpenObserve dev stack (see [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md)); `pnpm docker:obs:setup` scaffolds them in an untracked `.env.local`. Leave unset to disable: in development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
+- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export to the local OpenObserve dev stack (see [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md)); the untracked `.env.local` holds them, matching the credentials in `compose.observability.yml`. Leave unset to disable: in development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
 
 ## Scripts
 
-| Command                 | What it does                                        |
-| ----------------------- | --------------------------------------------------- |
-| `pnpm dev`              | Start the dev server                                |
-| `pnpm build`            | Production build (adapter-node)                     |
-| `pnpm preview`          | Preview the production build                        |
-| `pnpm lint`             | ESLint + svelte-check                               |
-| `pnpm fix`              | Prettier + ESLint autofix                           |
-| `pnpm test:unit`        | Vitest unit/integration tests                       |
-| `pnpm test:e2e`         | Playwright end-to-end tests (requires `pnpm build`) |
-| `pnpm test`             | Unit tests, then end-to-end tests                   |
-| `pnpm db:generate`      | Generate Drizzle migrations                         |
-| `pnpm db:migrate`       | Apply Drizzle migrations                            |
-| `pnpm db:studio`        | Open Drizzle Studio                                 |
-| `pnpm docker:dev`       | Start the dev PostgreSQL stack                      |
-| `pnpm docker:dev:down`  | Stop the dev PostgreSQL stack                       |
-| `pnpm docker:obs`       | Start the OpenObserve observability stack           |
-| `pnpm docker:obs:down`  | Stop the OpenObserve observability stack            |
-| `pnpm docker:obs:setup` | Scaffold local OpenObserve secrets and `.env.local` |
+| Command                | What it does                                        |
+| ---------------------- | --------------------------------------------------- |
+| `pnpm dev`             | Start the dev server                                |
+| `pnpm build`           | Production build (adapter-node)                     |
+| `pnpm preview`         | Preview the production build                        |
+| `pnpm lint`            | ESLint + svelte-check                               |
+| `pnpm fix`             | Prettier + ESLint autofix                           |
+| `pnpm test:unit`       | Vitest unit/integration tests                       |
+| `pnpm test:e2e`        | Playwright end-to-end tests (requires `pnpm build`) |
+| `pnpm test`            | Unit tests, then end-to-end tests                   |
+| `pnpm db:generate`     | Generate Drizzle migrations                         |
+| `pnpm db:migrate`      | Apply Drizzle migrations                            |
+| `pnpm db:studio`       | Open Drizzle Studio                                 |
+| `pnpm docker:dev`      | Start the dev PostgreSQL stack                      |
+| `pnpm docker:dev:down` | Stop the dev PostgreSQL stack                       |
+| `pnpm docker:obs`      | Start the OpenObserve observability stack           |
+| `pnpm docker:obs:down` | Stop the OpenObserve observability stack            |
 
 ## Testing
 

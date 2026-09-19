@@ -31,8 +31,7 @@
         "docker:test": "docker compose -f compose.test.yml up --wait && pnpm db:test:migrate",
         "docker:test:down": "docker compose -f compose.test.yml down --remove-orphans",
         "docker:obs": "docker compose -f compose.observability.yml up --wait",
-        "docker:obs:down": "docker compose -f compose.observability.yml down --remove-orphans",
-        "docker:obs:setup": "node openobserve/setup.js"
+        "docker:obs:down": "docker compose -f compose.observability.yml down --remove-orphans"
     },
     "devDependencies": {
         "@bastidood/eslint-plugin-imsort": "^0.12.0",
