@@ -3,7 +3,7 @@
  * (`openobserve/secrets/dev/admin_email` + `admin_password`) and derives the
  * artifacts from them: `admin.env` for the container and `.env.local`'s OTLP
  * endpoint + Authorization header for the app. Run via `pnpm docker:obs:setup`;
- * see docs/openobserve.md.
+ * see docs/OPENOBSERVE.md.
  */
 import path from 'node:path';
 import process from 'node:process';
@@ -52,7 +52,7 @@ async function readSecret(file) {
         await copyFile(`${file}.example`, file);
     } catch (error) {
         throw new Error(
-            `Cannot create ${file}: neither it nor ${file}.example exists. Create it with the OpenObserve admin credentials (see docs/openobserve.md).`,
+            `Cannot create ${file}: neither it nor ${file}.example exists. Create it with the OpenObserve admin credentials (see docs/OPENOBSERVE.md).`,
             { cause: error },
         );
     }
@@ -125,7 +125,7 @@ async function main() {
     const violation = passwordPolicyViolation(password);
     if (violation !== null)
         throw new Error(
-            `${passwordFile} ${violation}; OpenObserve rejects weaker passwords at startup (see docs/openobserve.md).`,
+            `${passwordFile} ${violation}; OpenObserve rejects weaker passwords at startup (see docs/OPENOBSERVE.md).`,
         );
 
     await writeFile(envFile, deriveEnvFileContents(email, password));

@@ -35,7 +35,7 @@ Environment variables (see [`.env.example`](.env.example)):
 - `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `SESSION_SECRET` (required) — GitHub app credentials
 - `FAKE_GITHUB_PORT` (optional) — for testing; set this to point the tests to a fake GitHub server at `http://localhost:${FAKE_GITHUB_PORT}`.
 - `GITHUB_ORG` (optional) — GitHub org used for teacher-role resolution until the classroom feature supplies org context per classroom; leave unset to resolve no role.
-- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export to the local OpenObserve dev stack (see [`docs/openobserve.md`](docs/openobserve.md)); `pnpm docker:obs:setup` scaffolds them in an untracked `.env.local`. Leave unset to disable: in development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
+- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export to the local OpenObserve dev stack (see [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md)); `pnpm docker:obs:setup` scaffolds them in an untracked `.env.local`. Leave unset to disable: in development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
 
 ## Scripts
 
@@ -68,4 +68,4 @@ Unit/integration tests are colocated with source files as `src/**/*.test.{js,ts}
 - [`TESTING.md`](TESTING.md) — testing commands and layout
 - [`REVIEW.md`](REVIEW.md) — code review expectations
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — topic-routed convention documents
-- [`docs/openobserve.md`](docs/openobserve.md) — OpenObserve dev stack for telemetry collection
+- [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md) — OpenObserve dev stack for telemetry collection
