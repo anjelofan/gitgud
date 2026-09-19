@@ -18,6 +18,12 @@ Thumbs.db
 !.env.example
 !.env.test
 
+# OpenObserve local secrets + env (templates *.example are tracked)
+openobserve/secrets/*
+!openobserve/secrets/dev
+openobserve/secrets/dev/*
+!openobserve/secrets/dev/*.example
+
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*

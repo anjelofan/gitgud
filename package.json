@@ -29,7 +29,10 @@
         "docker:dev": "docker compose -f compose.yml -f compose.dev.yml up --wait",
         "docker:dev:down": "docker compose -f compose.yml -f compose.dev.yml down --remove-orphans",
         "docker:test": "docker compose -f compose.test.yml up --wait && pnpm db:test:migrate",
-        "docker:test:down": "docker compose -f compose.test.yml down --remove-orphans"
+        "docker:test:down": "docker compose -f compose.test.yml down --remove-orphans",
+        "docker:obs": "docker compose -f compose.observability.yml up --wait",
+        "docker:obs:down": "docker compose -f compose.observability.yml down --remove-orphans",
+        "docker:obs:setup": "sh -c 'mkdir -p openobserve/secrets/dev && cp -n openobserve/secrets/dev/root_user_email.example openobserve/secrets/dev/root_user_email; cp -n openobserve/secrets/dev/root_user_password.example openobserve/secrets/dev/root_user_password; test -f .env.local || printf \"OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:5080/api/default\nOTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic cm9vdEBleGFtcGxlLmNvbTpEZXZPbmx5UGFzc3dvcmQxIQ==\n\" > .env.local; echo \"OpenObserve local config ready: secrets + .env.local\"'"
     },
     "devDependencies": {
         "@bastidood/eslint-plugin-imsort": "^0.12.0",
