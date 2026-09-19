@@ -1,16 +1,17 @@
 /**
  * Scaffolds the local OpenObserve dev credentials
  * (`openobserve/secrets/dev/admin_email` + `admin_password`) and derives the
- * artifacts from them: `admin.env` for the container and `.env.local`'s OTLP
- * endpoint + Authorization header for the app. Run via `pnpm docker:obs:setup`;
- * see docs/OPENOBSERVE.md.
+ * artifacts from them: the container's `ZO_ROOT_USER_*` values in `.env`
+ * (passed through by the Compose service) and `.env.local`'s OTLP endpoint +
+ * Authorization header for the app. Run via `pnpm docker:obs:setup`; see
+ * docs/OPENOBSERVE.md.
  */
 import path from 'node:path';
 import process from 'node:process';
 import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const DEFAULT_SECRETS_DIR = 'openobserve/secrets/dev';
-const ENV_FILE_NAME = 'admin.env';
+const ENV_FILE = '.env';
 const ENV_LOCAL_FILE = '.env.local';
 const OTLP_ENDPOINT = 'http://localhost:5080/api/default';
 const OTLP_ENDPOINT_KEY = 'OTEL_EXPORTER_OTLP_ENDPOINT';
@@ -29,7 +30,6 @@ try {
 const secretsDir = shellSecretsDir ?? process.env.OPENOBSERVE_SECRETS_DIR ?? DEFAULT_SECRETS_DIR;
 const emailFile = path.join(secretsDir, 'admin_email');
 const passwordFile = path.join(secretsDir, 'admin_password');
-const envFile = path.join(secretsDir, ENV_FILE_NAME);
 
 /** Mirrors `$(cat file)`: strips trailing newlines, keeps the rest verbatim. */
 function stripTrailingNewlines(contents) {
@@ -75,9 +75,10 @@ function passwordPolicyViolation(password) {
 }
 
 /**
- * Quotes a value for Compose's `env_file` parser without altering it: single
- * quotes keep values fully literal; double quotes (the fallback for values
- * containing `'`) interpolate `$`, so `\`, `"`, and `$` are escaped.
+ * Quotes a value for Compose's dotenv parser (`.env` and `env_file`) without
+ * altering it: single quotes keep values fully literal; double quotes (the
+ * fallback for values containing `'`) interpolate `$`, so `\`, `"`, and `$`
+ * are escaped.
  */
 function quoteEnvValue(value) {
     if (value.includes("'")) {
@@ -89,9 +90,12 @@ function quoteEnvValue(value) {
     return `'${value}'`;
 }
 
-/** Compose `env_file` contents: the variables OpenObserve reads at startup. */
-function deriveEnvFileContents(email, password) {
-    return `${ROOT_EMAIL_KEY}=${quoteEnvValue(email)}\n${ROOT_PASSWORD_KEY}=${quoteEnvValue(password)}\n`;
+/** The `ZO_ROOT_USER_*` lines the Compose service passes through from `.env`. */
+function deriveSecretEnvLines(email, password) {
+    return [
+        `${ROOT_EMAIL_KEY}=${quoteEnvValue(email)}`,
+        `${ROOT_PASSWORD_KEY}=${quoteEnvValue(password)}`,
+    ];
 }
 
 function deriveOtlpLines(email, password) {
@@ -102,16 +106,26 @@ function deriveOtlpLines(email, password) {
     ];
 }
 
-function isDerivedLine(line) {
+function isDerivedOtlpLine(line) {
     return line.startsWith(`${OTLP_ENDPOINT_KEY}=`) || line.startsWith(`${OTLP_HEADERS_KEY}=`);
 }
 
-/** Replaces the derived OTLP lines, preserving every other line. */
-function withDerivedLines(existingContents, derivedLines) {
+function isDerivedSecretLine(line) {
+    return line.startsWith(`${ROOT_EMAIL_KEY}=`) || line.startsWith(`${ROOT_PASSWORD_KEY}=`);
+}
+
+/** Replaces the derived lines, preserving every other line. */
+function withDerivedLines(existingContents, derivedLines, isDerivedLine) {
     const keptLines = existingContents.split('\n').filter((line) => !isDerivedLine(line));
     while (keptLines.length > 0 && keptLines.at(-1).trim() === '') keptLines.pop();
 
     return `${[...keptLines, ...derivedLines].join('\n')}\n`;
+}
+
+/** Reads a file's contents, treating a missing file as empty. */
+async function readIfExists(file) {
+    if (!(await pathExists(file))) return '';
+    return readFile(file, 'utf8');
 }
 
 async function main() {
@@ -128,19 +142,27 @@ async function main() {
             `${passwordFile} ${violation}; OpenObserve rejects weaker passwords at startup (see docs/OPENOBSERVE.md).`,
         );
 
-    await writeFile(envFile, deriveEnvFileContents(email, password));
-
-    let existingContents = '';
-    if (await pathExists(ENV_LOCAL_FILE)) existingContents = await readFile(ENV_LOCAL_FILE, 'utf8');
+    await writeFile(
+        ENV_FILE,
+        withDerivedLines(
+            await readIfExists(ENV_FILE),
+            deriveSecretEnvLines(email, password),
+            isDerivedSecretLine,
+        ),
+    );
 
     await writeFile(
         ENV_LOCAL_FILE,
-        withDerivedLines(existingContents, deriveOtlpLines(email, password)),
+        withDerivedLines(
+            await readIfExists(ENV_LOCAL_FILE),
+            deriveOtlpLines(email, password),
+            isDerivedOtlpLine,
+        ),
     );
 
     // eslint-disable-next-line no-console
     console.log(
-        `OpenObserve local config ready: ${secretsDir} credentials; derived ${ENV_FILE_NAME} + ${ENV_LOCAL_FILE}`,
+        `OpenObserve local config ready: ${secretsDir} credentials; derived ${ENV_FILE} + ${ENV_LOCAL_FILE}`,
     );
 }
 
