@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
     ASSIGNMENT_NAME_MAX_LENGTH,
     CreateAssignmentInputSchema,
+    DeadlineSchema,
     TEMPLATE_REPO_MAX_LENGTH,
 } from './contracts.ts';
 
@@ -117,6 +118,42 @@ describe('CreateAssignmentInputSchema', () => {
             deadline: '2026-09-15T18:00',
             templateRepo: 'r'.repeat(TEMPLATE_REPO_MAX_LENGTH + 1),
         });
+        expect(result.success).toBe(false);
+    });
+});
+
+describe('DeadlineSchema', () => {
+    it('interprets the entered wall clock as UTC', () => {
+        const result = v.safeParse(DeadlineSchema, '2026-09-15T18:00');
+        expect(result.success).toBe(true);
+        if (result.success)
+            expect(result.output.getTime()).toBe(Date.parse('2026-09-15T18:00:00Z'));
+    });
+
+    it('normalizes a space-separated deadline the same way', () => {
+        const result = v.safeParse(DeadlineSchema, '2026-09-15 18:00');
+        expect(result.success).toBe(true);
+        if (result.success)
+            expect(result.output.getTime()).toBe(Date.parse('2026-09-15T18:00:00Z'));
+    });
+
+    it('rejects a bare number like "9"', () => {
+        const result = v.safeParse(DeadlineSchema, '9');
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects a bare month name like "Dec"', () => {
+        const result = v.safeParse(DeadlineSchema, 'Dec');
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects a seconds-suffixed datetime', () => {
+        const result = v.safeParse(DeadlineSchema, '2026-09-15T18:00:30');
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects an impossible calendar date', () => {
+        const result = v.safeParse(DeadlineSchema, '2026-02-30T18:00');
         expect(result.success).toBe(false);
     });
 });

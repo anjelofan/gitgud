@@ -38,6 +38,48 @@ async function createProgram(page, { name, org }) {
     await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 }
 
+/** Deadline one day ahead, in the two representations the feature deals in:
+ * the `datetime-local` fill value and the UTC display string the dashboard renders.
+ * @returns {{fillValue: string, display: string}}
+ */
+function utcDeadlineParts() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'UTC',
+    });
+    return { fillValue: tomorrow.toISOString().slice(0, 16), display: formatter.format(tomorrow) };
+}
+
+/** Fills the create-assignment form with a deadline one day ahead in UTC wall clock.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} name
+ * @returns {Promise<void>}
+ */
+async function fillAssignmentForm(page, name) {
+    const { fillValue } = utcDeadlineParts();
+
+    await page.getByRole('textbox', { name: 'Assignment Name' }).fill(name);
+    await page.getByRole('textbox', { name: 'Deadline' }).fill(fillValue);
+    await page.getByRole('button', { name: 'Create Assignment' }).click();
+}
+
+/** Shows the create-assignment form and returns the assignment URL after submit.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} assignmentName
+ * @returns {Promise<void>}
+ */
+async function createAssignment(page, assignmentName) {
+    await fillAssignmentForm(page, assignmentName);
+    await expect(page).toHaveURL(/\/assignments\/[0-9a-f-]{36}$/u);
+}
+
 test.describe('invalid access', () => {
     const sampleId = '00000000-1111-2222-3333-444444444444';
 
@@ -70,14 +112,7 @@ test.describe('assignment creation journey', () => {
         await createProgram(page, { name: programName, org });
 
         const name = 'Test Assignment';
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const formattedDeadline = tomorrow.toISOString().slice(0, 16);
-
-        // Fill form
-        await page.getByRole('textbox', { name: 'Assignment Name' }).fill(name);
-        await page.getByRole('textbox', { name: 'Deadline' }).fill(formattedDeadline);
-        await page.getByRole('button', { name: 'Create Assignment' }).click();
+        await fillAssignmentForm(page, name);
 
         // Redirected to assignments page
         await expect(page).toHaveURL(/\/assignments\/[0-9a-f-]{36}$/u);
@@ -86,7 +121,7 @@ test.describe('assignment creation journey', () => {
         await expect(page.getByRole('heading', { name })).toBeVisible();
         await expect(page.getByText(`GitHub organization: ${org}`)).toBeVisible();
         await expect(
-            page.getByText(new RegExp(`Deadline:.*${tomorrow.getFullYear()}`, 'u')),
+            page.getByText(`Deadline: ${utcDeadlineParts().display}`, { exact: true }),
         ).toBeVisible();
         await expect(page.getByText(/Invite link: \/invite\//u)).toBeVisible();
         await expect(page.getByText('Template repo: dtp2627a-0 ')).toBeVisible();

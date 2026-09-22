@@ -13,12 +13,28 @@ export const AssignmentNameSchema = v.pipe(
     ),
 );
 
+/** Parses a `datetime-local` wall clock as UTC. */
+function utcDeadline(value: string) {
+    return new Date(`${value.replace(' ', 'T')}:00Z`);
+}
+
 export const DeadlineSchema = v.pipe(
     v.string(),
     v.trim(),
     v.minLength(1, 'Deadline is required.'),
-    v.check((s) => !Number.isNaN(new Date(s).getTime()), 'Please provide a valid deadline.'),
-    v.transform((s) => new Date(s)),
+    v.isoDateTime('Please provide a valid deadline.'),
+    // `Date` rolls impossible calendar dates (e.g. Feb 30) into the next month; the round-trip comparison rejects them.
+    v.check((s) => {
+        const date = utcDeadline(s);
+        return (
+            date.getUTCFullYear() === Number(s.slice(0, 4)) &&
+            date.getUTCMonth() === Number(s.slice(5, 7)) - 1 &&
+            date.getUTCDate() === Number(s.slice(8, 10)) &&
+            date.getUTCHours() === Number(s.slice(11, 13)) &&
+            date.getUTCMinutes() === Number(s.slice(14, 16))
+        );
+    }, 'Please provide a valid deadline.'),
+    v.transform(utcDeadline),
 );
 
 export const TemplateRepoSchema = v.pipe(
