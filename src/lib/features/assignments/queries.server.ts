@@ -37,7 +37,8 @@ export async function createAssignmentForProgram(db: DbConnection, args: CreateA
             .from(programs)
             .where(
                 and(eq(programs.id, args.programId), eq(programs.instructorId, args.instructorId)),
-            );
+            )
+            .limit(1);
         if (typeof program === 'undefined') return null;
 
         // Insert assignment into db
@@ -87,7 +88,8 @@ export async function getAssignmentForInstructor(
             })
             .from(assignments)
             .innerJoin(programs, eq(assignments.programId, programs.id))
-            .where(and(eq(assignments.id, assignmentId), eq(programs.instructorId, instructorId)));
+            .where(and(eq(assignments.id, assignmentId), eq(programs.instructorId, instructorId)))
+            .limit(1);
         if (typeof row === 'undefined') return null;
 
         return { assignment: row.assignment, program: row.program };
