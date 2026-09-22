@@ -54,7 +54,7 @@
                     type="text"
                     name="name"
                     maxlength="120"
-                    value={form?.data?.name ?? ''}
+                    value={form === null ? '' : form.data.name}
                     required
                 />
             </label>
@@ -67,7 +67,7 @@
                     type="datetime-local"
                     name="deadline"
                     required
-                    value={form?.data?.deadline ?? ''}
+                    value={form === null ? '' : form.data.deadline}
                 />
             </label>
         </div>
@@ -78,7 +78,11 @@
                 {#if repositories.length === 0}
                     <p>No available repositories in organization</p>
                 {:else}
-                    <select name="templateRepo" required>
+                    <select
+                        name="templateRepo"
+                        required
+                        value={form === null ? repositories[0] : form.data.templateRepo}
+                    >
                         {#each repositories as r (r)}
                             <option value={r}> {r} </option>
                         {/each}

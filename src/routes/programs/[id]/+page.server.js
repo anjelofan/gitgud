@@ -14,6 +14,7 @@ import {
 import { getProgramForInstructor } from '$lib/features/programs/queries.server';
 import { listOrgRepos } from '$lib/server/github/repos.js';
 import { Logger } from '$lib/server/telemetry/logger';
+import { resolve } from '$app/paths';
 import { resolveRole } from '$lib/server/auth/roles';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
@@ -112,11 +113,7 @@ export const actions = {
                         path: v.getDotPath(issue) ?? 'form',
                         message: issue.message,
                     })),
-                    data: {
-                        name: submitted.name,
-                        deadline: submitted.deadline,
-                        templateRepo: submitted.templateRepo,
-                    },
+                    data: submitted,
                 });
             }
 
@@ -192,9 +189,7 @@ export const actions = {
             const assignment = await createAssignmentForProgram(db, {
                 instructorId: session.user.id,
                 programId: programId.output,
-                name: parsed.output.name,
-                deadline: parsed.output.deadline,
-                templateRepo: parsed.output.templateRepo,
+                ...parsed.output,
             });
 
             if (assignment === null) {
@@ -214,7 +209,7 @@ export const actions = {
                 'assignment.name': assignment.name,
                 'assignment.templateRepo': assignment.templateRepo,
             });
-            redirect(303, `/assignments/${assignment.id}`);
+            redirect(303, resolve('/assignments/[id]', { id: assignment.id }));
         });
     },
 };
