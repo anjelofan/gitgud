@@ -127,6 +127,69 @@ test.describe('assignment creation journey', () => {
         await expect(page.getByText('Template repo: dtp2627a-0 ')).toBeVisible();
     });
 
+    test('lists the assignment on the program dashboard after creation', async ({ page }) => {
+        const programName = 'listing program';
+        await createProgram(page, { name: programName, org: 'e2e-assign-org' });
+
+        await createAssignment(page, 'Listed Assignment');
+
+        await page.getByRole('link', { name: `← Back to ${programName}` }).click();
+        await expect(page.getByRole('heading', { level: 1, name: programName })).toBeVisible();
+        await expect(page.getByRole('link', { name: ' Listed Assignment' })).toBeVisible();
+    });
+
+    test('links the template repository to its GitHub page', async ({ page }) => {
+        await createProgram(page, { name: 'template link program', org: 'e2e-assign-org' });
+
+        await createAssignment(page, 'Template Link Assignment');
+
+        await expect(page.getByRole('link', { name: 'dtp2627a-0' })).toHaveAttribute(
+            'href',
+            'https://github.com/e2e-assign-org/dtp2627a-0',
+        );
+    });
+
+    test('rejects a submission without a template repository', async ({ page }) => {
+        await createProgram(page, { name: 'no template program', org: 'e2e-assign-empty-org' });
+
+        const { fillValue } = utcDeadlineParts();
+        await page.getByRole('textbox', { name: 'Assignment Name' }).fill('No Template Assignment');
+        await page.getByRole('textbox', { name: 'Deadline' }).fill(fillValue);
+        await page.getByRole('button', { name: 'Create Assignment' }).click();
+
+        await expect(page.getByText('Check the highlighted fields.')).toBeVisible();
+        await expect(
+            page.getByText('templateRepo: Repository template is required.'),
+        ).toBeVisible();
+    });
+
+    test('rejects a foreign instructor viewing another instructor’s assignment', async ({
+        page,
+    }) => {
+        await createProgram(page, { name: 'cross program', org: 'e2e-assign-org' });
+        await createAssignment(page, 'Shared Assignment');
+        const assignmentUrl = page.url();
+
+        // Sign out and sign back in as a different GitHub user
+        await page.goto('/');
+        await page.getByRole('button', { name: 'Sign out' }).click();
+        await fakeGithub('registerUser', {
+            token: 'second-user-token',
+            user: {
+                id: 2,
+                login: 'second-cat',
+                avatar_url: 'https://avatars.githubusercontent.com/u/2?v=4',
+            },
+        });
+        await fakeGithub('authorizeAs', { token: 'second-user-token' });
+        await page.goto('/');
+        await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
+        await expect(page.getByText('Signed in as second-cat')).toBeVisible();
+
+        const response = await page.goto(assignmentUrl);
+        expect(response?.status()).toBe(404);
+    });
+
     test('shows no template options when the organization has no repositories', async ({
         page,
     }) => {
