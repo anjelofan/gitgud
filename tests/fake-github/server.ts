@@ -49,6 +49,7 @@ export class FakeGithub {
     #refreshTokens = new Map<string, { token: string }>();
     #server: Server | null = null;
     #repos = new Map<string, { status: number; body: unknown }>();
+    #nextAuthorizeToken: string | null = null;
     defaultToken = 'fake-default-access-token';
 
     registerUser({ token, user = DEFAULT_USER }: { token: string; user?: FakeUser }) {
@@ -93,6 +94,11 @@ export class FakeGithub {
         });
     }
 
+    /** Makes the next OAuth authorize round-trip sign in as the given token's user (one-shot). */
+    authorizeAs({ token }: { token: string }) {
+        this.#nextAuthorizeToken = token;
+    }
+
     /** Issues an authorization code that exchanges into the given token. */
     issueAuthorizationCode({ token, value }: { token: string; value?: string }) {
         const code = value ?? `code-${randomUUID()}`;
@@ -113,6 +119,7 @@ export class FakeGithub {
         this.#codes.clear();
         this.#refreshTokens.clear();
         this.#repos.clear();
+        this.#nextAuthorizeToken = null;
     }
 
     async listen(port = resolveFakeGitHubPort()) {
@@ -185,6 +192,7 @@ export class FakeGithub {
                 ),
             issueAuthorizationCode: (args) =>
                 this.issueAuthorizationCode(args as { token: string; value?: string }),
+            authorizeAs: (args) => this.authorizeAs(args as { token: string }),
             issueRefreshToken: (args) =>
                 this.issueRefreshToken(args as { token: string; value?: string }),
             reset: () => this.reset(),
@@ -205,7 +213,9 @@ export class FakeGithub {
         const state = url.searchParams.get('state');
         if (redirectUri === null) return respond(response, 400, { error: 'missing redirect_uri' });
 
-        const code = this.issueAuthorizationCode({ token: this.defaultToken });
+        const grantToken = this.#nextAuthorizeToken ?? this.defaultToken;
+        this.#nextAuthorizeToken = null;
+        const code = this.issueAuthorizationCode({ token: grantToken });
         const target = new URL(redirectUri);
         target.searchParams.set('code', code);
         if (state !== null) target.searchParams.set('state', state);
