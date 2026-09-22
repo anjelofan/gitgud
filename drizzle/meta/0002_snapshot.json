@@ -1,6 +1,6 @@
 {
-    "id": "c45c8dd3-8340-4771-9105-3a4afc7d89f5",
-    "prevId": "810d9681-c993-424b-b572-406d955c20dd",
+    "id": "7e49078c-a45e-4ff8-be5b-03d99f53cb41",
+    "prevId": "c45c8dd3-8340-4771-9105-3a4afc7d89f5",
     "version": "7",
     "dialect": "postgresql",
     "tables": {
@@ -353,6 +353,102 @@
             },
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.assignments": {
+            "name": "assignments",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "default": "gen_random_uuid()"
+                },
+                "program_id": {
+                    "name": "program_id",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "assignment_name": {
+                    "name": "assignment_name",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "deadline": {
+                    "name": "deadline",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "invite_token": {
+                    "name": "invite_token",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "template_repo": {
+                    "name": "template_repo",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "assignments_program_id_idx": {
+                    "name": "assignments_program_id_idx",
+                    "columns": [
+                        {
+                            "expression": "program_id",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "assignments_program_id_programs_id_fk": {
+                    "name": "assignments_program_id_programs_id_fk",
+                    "tableFrom": "assignments",
+                    "tableTo": "programs",
+                    "columnsFrom": ["program_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {
+                "assignments_invite_token_unique": {
+                    "name": "assignments_invite_token_unique",
+                    "nullsNotDistinct": false,
+                    "columns": ["invite_token"]
+                }
+            },
             "policies": {},
             "checkConstraints": {},
             "isRLSEnabled": false

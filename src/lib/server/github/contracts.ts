@@ -16,3 +16,6 @@ export const OAuthTokenResponseSchema = v.object({
     scope: v.string(),
 });
 export type OAuthTokenResponse = v.InferOutput<typeof OAuthTokenResponseSchema>;
+
+export const OrgReposSchema = v.array(v.object({ name: v.string() }));
+export type OrgRepos = v.InferOutput<typeof OrgReposSchema>;

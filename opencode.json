@@ -66,14 +66,16 @@
         },
         "skill": {
             "*": "ask",
-            "code-style": "allow",
-            "vertically-sliced-feature-modules": "allow",
             "adversarial-code-review": "allow",
+            "code-style": "allow",
+            "debug-local-postgres": "allow",
             "drizzle-orm-best-practices": "allow",
-            "typescript-best-practices": "allow",
+            "open-telemetry-best-practices": "allow",
             "svelte-best-practices": "allow",
             "testing-guidelines": "allow",
-            "valibot-best-practices": "allow"
+            "typescript-best-practices": "allow",
+            "valibot-best-practices": "allow",
+            "vertically-sliced-feature-modules": "allow"
         }
     }
 }

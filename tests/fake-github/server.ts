@@ -48,6 +48,8 @@ export class FakeGithub {
     #codes = new Map<string, { token: string }>();
     #refreshTokens = new Map<string, { token: string }>();
     #server: Server | null = null;
+    #repos = new Map<string, { status: number; body: unknown }>();
+    #nextAuthorizeToken: string | null = null;
     defaultToken = 'fake-default-access-token';
 
     registerUser({ token, user = DEFAULT_USER }: { token: string; user?: FakeUser }) {
@@ -78,6 +80,25 @@ export class FakeGithub {
         });
     }
 
+    registerRepos({ token, org, repos }: { token: string; org: string; repos: string[] }) {
+        this.#repos.set(`${token}\n${org}`, {
+            status: 200,
+            body: repos.map((name) => ({ name })),
+        });
+    }
+
+    registerReposError({ token, org, status }: { token: string; org: string; status: number }) {
+        this.#repos.set(`${token}\n${org}`, {
+            status,
+            body: { message: 'fake repo listing failure', status: String(status) },
+        });
+    }
+
+    /** Makes the next OAuth authorize round-trip sign in as the given token's user (one-shot). */
+    authorizeAs({ token }: { token: string }) {
+        this.#nextAuthorizeToken = token;
+    }
+
     /** Issues an authorization code that exchanges into the given token. */
     issueAuthorizationCode({ token, value }: { token: string; value?: string }) {
         const code = value ?? `code-${randomUUID()}`;
@@ -97,6 +118,8 @@ export class FakeGithub {
         this.#memberships.clear();
         this.#codes.clear();
         this.#refreshTokens.clear();
+        this.#repos.clear();
+        this.#nextAuthorizeToken = null;
     }
 
     async listen(port = resolveFakeGitHubPort()) {
@@ -150,6 +173,8 @@ export class FakeGithub {
             return this.#getUser(token, response);
         if (url.pathname.startsWith('/user/memberships/orgs/') && request.method === 'GET')
             return this.#membership(token, url.pathname, response);
+        if (url.pathname.startsWith('/orgs/') && request.method === 'GET')
+            return this.#orgRepos(token, url.pathname, response);
 
         respond(response, 404, { message: 'Not Found' });
     }
@@ -167,9 +192,14 @@ export class FakeGithub {
                 ),
             issueAuthorizationCode: (args) =>
                 this.issueAuthorizationCode(args as { token: string; value?: string }),
+            authorizeAs: (args) => this.authorizeAs(args as { token: string }),
             issueRefreshToken: (args) =>
                 this.issueRefreshToken(args as { token: string; value?: string }),
             reset: () => this.reset(),
+            registerRepos: (args) =>
+                this.registerRepos(args as { token: string; org: string; repos: string[] }),
+            registerReposError: (args) =>
+                this.registerReposError(args as { token: string; org: string; status: number }),
         };
         if (typeof op !== 'string') return respond(response, 400, { message: 'Missing fake op.' });
         const run = ops[op];
@@ -183,7 +213,9 @@ export class FakeGithub {
         const state = url.searchParams.get('state');
         if (redirectUri === null) return respond(response, 400, { error: 'missing redirect_uri' });
 
-        const code = this.issueAuthorizationCode({ token: this.defaultToken });
+        const grantToken = this.#nextAuthorizeToken ?? this.defaultToken;
+        this.#nextAuthorizeToken = null;
+        const code = this.issueAuthorizationCode({ token: grantToken });
         const target = new URL(redirectUri);
         target.searchParams.set('code', code);
         if (state !== null) target.searchParams.set('state', state);
@@ -228,5 +260,15 @@ export class FakeGithub {
                 status: '404',
             });
         respond(response, membership.status, membership.body);
+    }
+
+    #orgRepos(token: string | null, pathname: string, response: ServerResponse) {
+        const org = decodeURIComponent(
+            pathname.replace(/^\/orgs\/(?<org>[^/]+)\/repos$/u, '$<org>'),
+        );
+        const repos = this.#repos.get(`${token}\n${org}`);
+        if (typeof repos === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, repos.status, repos.body);
     }
 }

@@ -1,5 +1,5 @@
 import { bigint, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 export const users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -51,19 +51,3 @@ export const githubTokens = pgTable('github_tokens', {
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type GithubTokens = typeof githubTokens.$inferSelect;
-
-export const usersRelations = relations(users, ({ many, one }) => ({
-    sessions: many(sessions),
-    githubTokens: one(githubTokens, {
-        fields: [users.id],
-        references: [githubTokens.userId],
-    }),
-}));
-
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-    user: one(users, { fields: [sessions.userId], references: [users.id] }),
-}));
-
-export const githubTokensRelations = relations(githubTokens, ({ one }) => ({
-    user: one(users, { fields: [githubTokens.userId], references: [users.id] }),
-}));
