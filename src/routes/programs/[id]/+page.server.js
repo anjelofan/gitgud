@@ -7,7 +7,10 @@ import {
 } from '$lib/features/assignments/queries.server.js';
 import { CreateAssignmentInputSchema } from '$lib/features/assignments/contracts.js';
 import { db } from '$lib/server/db';
-import { decodeCreateAssignmentForm } from '$lib/features/assignments/form.server.js';
+import {
+    decodeCreateAssignmentForm,
+    isKnownOrgRepo,
+} from '$lib/features/assignments/form.server.js';
 import { getProgramForInstructor } from '$lib/features/programs/queries.server';
 import { listOrgRepos } from '$lib/server/github/repos.js';
 import { Logger } from '$lib/server/telemetry/logger';
@@ -131,7 +134,12 @@ export const actions = {
             }
 
             const { org } = owned.program;
-            const role = await resolveRole(session.githubToken, org);
+            const [role, orgRepos] = await Promise.all([
+                resolveRole(session.githubToken, org),
+                session.githubToken === null
+                    ? Promise.resolve(null)
+                    : listOrgRepos(session.githubToken, org).catch(() => null),
+            ]);
             if (role?.kind !== 'instructor') {
                 logger.fatal('creator is not an owner of the GitHub organization', void 0, {
                     'user.id': session.user.id,
@@ -141,6 +149,43 @@ export const actions = {
                     message: `You must be an owner of the ${org} organization on GitHub to create an assignment in it.`,
                     issues: [],
                     data: EMPTY_ASSIGNMENT_DATA,
+                });
+            }
+
+            if (orgRepos === null) {
+                logger.fatal('organization repositories not listed for validation', void 0, {
+                    'user.id': session.user.id,
+                    'github.org': org,
+                });
+                return fail(502, {
+                    message:
+                        'Template repositories could not be listed from GitHub. Try again later.',
+                    issues: [],
+                    data: EMPTY_ASSIGNMENT_DATA,
+                });
+            }
+
+            if (
+                !isKnownOrgRepo(
+                    orgRepos.map((repo) => repo.name),
+                    parsed.output.templateRepo,
+                )
+            ) {
+                logger.fatal('submitted template repository is not in the organization', void 0, {
+                    'user.id': session.user.id,
+                    'github.org': org,
+                    'assignment.templateRepo': parsed.output.templateRepo,
+                });
+                return fail(422, {
+                    message: 'Check the highlighted fields.',
+                    issues: [
+                        {
+                            path: 'templateRepo',
+                            message:
+                                'Repository template must be a repository in the program organization.',
+                        },
+                    ],
+                    data: submitted,
                 });
             }
 

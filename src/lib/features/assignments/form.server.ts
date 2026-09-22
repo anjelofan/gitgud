@@ -15,3 +15,11 @@ export function decodeCreateAssignmentForm(formData: FormData) {
         templateRepo: stringField(formData, 'templateRepo'),
     };
 }
+
+/**
+ * Verifies the submitted template repository against the organization's repo
+ * list; the form `<select>` alone does not enforce the org-membership invariant.
+ */
+export function isKnownOrgRepo(repositories: string[], submitted: string) {
+    return repositories.includes(submitted);
+}
