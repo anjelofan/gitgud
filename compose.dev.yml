@@ -22,6 +22,21 @@ services:
       start_period: 15s
       start_interval: 1s
 
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:v0.91.0
+    restart: always
+    environment:
+      ZO_HTTP_PORT: '5080'
+      ZO_ROOT_USER_EMAIL: 'admin@example.com'
+      ZO_ROOT_USER_PASSWORD: 'AdminPassword1!'
+    volumes:
+      - openobserve-data:/data
+    ports:
+      - host_ip: 127.0.0.1
+        published: 5080
+        target: 5080
+        protocol: tcp
+
 networks:
   dev-database:
     external: false
