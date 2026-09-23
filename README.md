@@ -24,7 +24,7 @@ Prerequisites: Node ≥24, pnpm 11+, Docker.
 ```sh
 pnpm install             # install dependencies
 cp .env.example .env     # configure environment (defaults match the dev stack)
-pnpm docker:dev          # start PostgreSQL 17 on localhost:5432
+pnpm docker:dev          # start PostgreSQL 17 on localhost:5432 and OpenObserve on localhost:5080
 pnpm db:migrate          # apply Drizzle migrations
 pnpm dev                 # start the dev server
 ```
@@ -35,7 +35,7 @@ Environment variables (see [`.env.example`](.env.example)):
 - `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `SESSION_SECRET` (required) — GitHub app credentials
 - `FAKE_GITHUB_PORT` (optional) — for testing; set this to point the tests to a fake GitHub server at `http://localhost:${FAKE_GITHUB_PORT}`.
 - `GITHUB_ORG` (optional) — GitHub org used for teacher-role resolution until the classroom feature supplies org context per classroom; leave unset to resolve no role.
-- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export to the local OpenObserve dev stack (see [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md)); the untracked `.env.local` holds them, matching the credentials in `compose.observability.yml`. Leave unset to disable: in development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
+- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export to the local OpenObserve dev service (see [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md)); the untracked `.env.local` holds them, matching the credentials in [`compose.dev.yml`](compose.dev.yml). Leave unset to disable: in development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
 
 ## Scripts
 
@@ -52,10 +52,8 @@ Environment variables (see [`.env.example`](.env.example)):
 | `pnpm db:generate`     | Generate Drizzle migrations                         |
 | `pnpm db:migrate`      | Apply Drizzle migrations                            |
 | `pnpm db:studio`       | Open Drizzle Studio                                 |
-| `pnpm docker:dev`      | Start the dev PostgreSQL stack                      |
-| `pnpm docker:dev:down` | Stop the dev PostgreSQL stack                       |
-| `pnpm docker:obs`      | Start the OpenObserve observability stack           |
-| `pnpm docker:obs:down` | Stop the OpenObserve observability stack            |
+| `pnpm docker:dev`      | Start the dev PostgreSQL + OpenObserve stack        |
+| `pnpm docker:dev:down` | Stop the dev PostgreSQL + OpenObserve stack         |
 
 ## Testing
 
