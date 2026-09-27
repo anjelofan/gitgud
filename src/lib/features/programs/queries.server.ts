@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
+import { DatabaseError } from 'pg';
 
 import type { DbConnection } from '$lib/server/db';
 import { Logger } from '$lib/server/telemetry/logger';
 import { programs, rosterEntries } from '$lib/server/db/schema';
 import { Tracer } from '$lib/server/telemetry/tracer';
+
+import { namesToAdd, rosterCapacityExceeded } from './roster.ts';
 
 const SERVICE_NAME = 'programs.queries';
 const logger = Logger.byName(SERVICE_NAME);
@@ -74,6 +77,194 @@ export async function getProgramForInstructor(
 
         const students = rows.flatMap((row) => (row.rosterEntry === null ? [] : [row.rosterEntry]));
         return { program: first.program, students };
+    });
+}
+
+function isUniqueNameViolation(error: unknown) {
+    return error instanceof DatabaseError && error.code === '23505';
+}
+
+type DbTransaction = Parameters<Parameters<DbConnection['transaction']>[0]>[0];
+
+/** Locks the program row when the instructor owns it. A missing id and another owner's program both return null. */
+async function lockOwnedProgram(tx: DbTransaction, programId: string, instructorId: string) {
+    const locked = await tx
+        .select({ id: programs.id })
+        .from(programs)
+        .where(and(eq(programs.id, programId), eq(programs.instructorId, instructorId)))
+        .limit(1)
+        .for('update');
+    const [program] = locked;
+    return program ?? null;
+}
+
+/** Adds net-new student names to an owned program roster. */
+export async function addStudentsToProgram(
+    db: DbConnection,
+    args: { programId: string; instructorId: string; names: string[] },
+) {
+    return await tracer.asyncSpan('add-students-to-program', async (span) => {
+        span.setAttributes({
+            'program.id': args.programId,
+            'user.id': args.instructorId,
+            'program.roster_add_count': args.names.length,
+        });
+
+        try {
+            const outcome = await db.transaction(async (tx) => {
+                const program = await lockOwnedProgram(tx, args.programId, args.instructorId);
+                if (program === null)
+                    return { ok: false as const, error: { kind: 'not-owner' as const } };
+
+                const existing = await tx
+                    .select({ name: rosterEntries.name })
+                    .from(rosterEntries)
+                    .where(eq(rosterEntries.programId, args.programId));
+                const newNames = namesToAdd(
+                    existing.map((entry) => entry.name),
+                    args.names,
+                );
+                if (newNames.length === 0)
+                    return { ok: false as const, error: { kind: 'no-new-names' as const } };
+
+                const capacityMessage = rosterCapacityExceeded(existing.length, newNames.length);
+                if (capacityMessage !== null)
+                    return {
+                        ok: false as const,
+                        error: { kind: 'capacity-exceeded' as const, message: capacityMessage },
+                    };
+
+                await tx
+                    .insert(rosterEntries)
+                    .values(newNames.map((name) => ({ programId: args.programId, name })));
+                return { ok: true as const, added: newNames.length };
+            });
+
+            if (outcome.ok)
+                logger.info('students added to roster', {
+                    'program.id': args.programId,
+                    'program.roster_added': outcome.added,
+                });
+            return outcome;
+        } catch (error) {
+            if (isUniqueNameViolation(error))
+                return { ok: false as const, error: { kind: 'name-conflict' as const } };
+            throw error;
+        }
+    });
+}
+
+/** Renames one roster entry when it belongs to an instructor-owned program. */
+export async function renameRosterEntry(
+    db: DbConnection,
+    args: { programId: string; instructorId: string; entryId: string; name: string },
+) {
+    return await tracer.asyncSpan('rename-roster-entry', async (span) => {
+        span.setAttributes({
+            'program.id': args.programId,
+            'user.id': args.instructorId,
+            'roster.entry_id': args.entryId,
+        });
+
+        try {
+            const outcome = await db.transaction(async (tx) => {
+                const program = await lockOwnedProgram(tx, args.programId, args.instructorId);
+                if (program === null)
+                    return { ok: false as const, error: { kind: 'not-owner' as const } };
+
+                const existing = await tx
+                    .select({ id: rosterEntries.id, name: rosterEntries.name })
+                    .from(rosterEntries)
+                    .where(eq(rosterEntries.programId, program.id));
+                const entry = existing.find((student) => student.id === args.entryId);
+                if (typeof entry === 'undefined')
+                    return { ok: false as const, error: { kind: 'not-found' as const } };
+
+                if (entry.name === args.name) return { ok: true as const };
+
+                const nameTaken = existing.some(
+                    (student) => student.name === args.name && student.id !== args.entryId,
+                );
+                if (nameTaken)
+                    return { ok: false as const, error: { kind: 'name-conflict' as const } };
+
+                const result = await tx
+                    .update(rosterEntries)
+                    .set({ name: args.name })
+                    .where(
+                        and(
+                            eq(rosterEntries.id, args.entryId),
+                            eq(rosterEntries.programId, program.id),
+                        ),
+                    );
+                if (result.rowCount !== 1)
+                    return { ok: false as const, error: { kind: 'not-found' as const } };
+                return { ok: true as const };
+            });
+
+            if (outcome.ok)
+                logger.info('roster entry renamed', {
+                    'program.id': args.programId,
+                    'roster.entry_id': args.entryId,
+                });
+            return outcome;
+        } catch (error) {
+            if (isUniqueNameViolation(error))
+                return { ok: false as const, error: { kind: 'name-conflict' as const } };
+            throw error;
+        }
+    });
+}
+
+/** Removes roster entries from an instructor-owned program. */
+export async function removeRosterEntries(
+    db: DbConnection,
+    args: { programId: string; instructorId: string; entryIds: string[] },
+) {
+    return await tracer.asyncSpan('remove-roster-entries', async (span) => {
+        const entryIds = [...new Set(args.entryIds)];
+        span.setAttributes({
+            'program.id': args.programId,
+            'user.id': args.instructorId,
+            'program.roster_remove_count': entryIds.length,
+        });
+
+        const outcome = await db.transaction(async (tx) => {
+            const program = await lockOwnedProgram(tx, args.programId, args.instructorId);
+            if (program === null)
+                return { ok: false as const, error: { kind: 'not-owner' as const } };
+
+            const existing = await tx
+                .select({ id: rosterEntries.id })
+                .from(rosterEntries)
+                .where(eq(rosterEntries.programId, args.programId));
+            const ownedIds = new Set(existing.map((entry) => entry.id));
+            const unknownId = entryIds.find((entryId) => !ownedIds.has(entryId));
+            if (typeof unknownId !== 'undefined')
+                return { ok: false as const, error: { kind: 'not-found' as const } };
+
+            const result = await tx
+                .delete(rosterEntries)
+                .where(
+                    and(
+                        eq(rosterEntries.programId, args.programId),
+                        inArray(rosterEntries.id, entryIds),
+                    ),
+                );
+            const removed = result.rowCount;
+            if (removed !== entryIds.length)
+                throw new Error(
+                    `Expected to remove ${entryIds.length} roster entries, removed ${removed}.`,
+                );
+            return { ok: true as const, removed };
+        });
+
+        if (outcome.ok)
+            logger.info('roster entries removed', {
+                'program.id': args.programId,
+                'program.roster_removed': outcome.removed,
+            });
+        return outcome;
     });
 }
 
