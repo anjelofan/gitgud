@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 
 import { and, desc, eq, isNull } from 'drizzle-orm';
 
-import { assignments, programs, rosterEntries } from '$lib/server/db/schema';
+import { assignments, programs, rosterEntries, submissions, users } from '$lib/server/db/schema';
 import type { DbConnection } from '$lib/server/db';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
@@ -92,7 +92,25 @@ export async function getAssignmentForInstructor(
             .limit(1);
         if (typeof row === 'undefined') return null;
 
-        return { assignment: row.assignment, program: row.program };
+        const students = await db
+            .select({
+                name: rosterEntries.name,
+                login: users.login,
+                avatarUrl: users.avatarUrl,
+                repoName: submissions.repoName,
+            })
+            .from(rosterEntries)
+            .leftJoin(users, eq(rosterEntries.claimedUserId, users.id))
+            .leftJoin(
+                submissions,
+                and(
+                    eq(rosterEntries.id, submissions.rosterEntryId),
+                    eq(submissions.assignmentId, row.assignment.id),
+                ),
+            )
+            .where(and(eq(rosterEntries.programId, row.assignment.programId)));
+
+        return { ...row, students };
     });
 }
 

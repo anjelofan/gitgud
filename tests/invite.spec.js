@@ -175,4 +175,35 @@ test.describe('assignment invitation journey', () => {
             `https://github.com/${ORG}/${REPO_NAME}`,
         );
     });
+
+    test('shows accepted student details on the instructor dashboard', async ({ page }) => {
+        const assignmentUrl = await createProgramAndAssignment(page);
+        const invite = await inviteUrlOf(page);
+
+        await page.goto('/');
+        await page.getByRole('button', { name: 'Sign out' }).click();
+        await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
+        await page.goto(invite);
+        await page.getByLabel('Choose your name:').selectOption('Jane Doe');
+        await page.getByRole('button', { name: 'Accept assignment' }).click();
+        await expect(page.getByText('Assignment accepted!')).toBeVisible();
+
+        await page.goto('/');
+        await page.getByRole('button', { name: 'Sign out' }).click();
+        await page.goto('/');
+        await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
+        await expect(page.getByText('Signed in as octocat')).toBeVisible();
+
+        await page.goto(assignmentUrl);
+        await expect(page.getByText('Jane Doe')).toBeVisible();
+        await expect(page.getByRole('link', { name: '@student-cat' })).toHaveAttribute(
+            'href',
+            'https://github.com/student-cat',
+        );
+        await expect(page.getByAltText("student-cat's avatar")).toBeVisible();
+        await expect(page.getByRole('link', { name: 'See repository' })).toHaveAttribute(
+            'href',
+            `https://github.com/${ORG}/${REPO_NAME}`,
+        );
+    });
 });
