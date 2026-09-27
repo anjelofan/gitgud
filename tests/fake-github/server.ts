@@ -39,8 +39,10 @@ function bearerToken(request: IncomingMessage) {
 
 /**
  * In-memory fake of the GitHub surface this app uses: the OAuth web
- * application flow, `GET /user`, and organization memberships. Tests never
- * reach the real GitHub API; this server is the boundary instead.
+ * application flow, `GET /user`, organization memberships, repository
+ * listing, template-generated repository creation, git refs, and
+ * collaborator invitations. Tests never reach the real GitHub API; this
+ * server is the boundary instead.
  */
 export class FakeGithub {
     #users = new Map<string, FakeUser>();
@@ -49,6 +51,15 @@ export class FakeGithub {
     #refreshTokens = new Map<string, { token: string }>();
     #server: Server | null = null;
     #repos = new Map<string, { status: number; body: unknown }>();
+    #templates = new Map<string, { status: number; body: unknown }>();
+    #branchHeads = new Map<string, { status: number; body: unknown }>();
+    #commits = new Map<string, { status: number; body: unknown }>();
+    #branchCreations = new Map<string, { status: number; body: unknown }>();
+    #collaborators = new Map<string, { status: number; body: unknown }>();
+    #installations = new Map<string, { status: number; body: unknown }>();
+    #installationTokens = new Map<string, { status: number; body: unknown }>();
+    #pullRequests = new Map<string, { status: number; body: unknown }>();
+    #createdPullRequests = new Map<string, unknown>();
     #nextAuthorizeToken: string | null = null;
     defaultToken = 'fake-default-access-token';
 
@@ -94,6 +105,211 @@ export class FakeGithub {
         });
     }
 
+    registerTemplate({
+        token,
+        org,
+        template,
+        repoName,
+        defaultBranch = 'main',
+    }: {
+        token: string;
+        org: string;
+        template: string;
+        repoName: string;
+        defaultBranch?: string;
+    }) {
+        this.#templates.set(`${token}\n${org}\n${template}`, {
+            status: 201,
+            body: { name: repoName, default_branch: defaultBranch },
+        });
+    }
+
+    registerTemplateError({
+        token,
+        org,
+        template,
+        status,
+    }: {
+        token: string;
+        org: string;
+        template: string;
+        status: number;
+    }) {
+        this.#templates.set(`${token}\n${org}\n${template}`, {
+            status,
+            body: { message: 'fake template generation failure', status: String(status) },
+        });
+    }
+
+    registerBranchHead({
+        token,
+        owner,
+        repo,
+        branch,
+        sha,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        branch: string;
+        sha: string;
+    }) {
+        this.#branchHeads.set(`${token}\n${owner}\n${repo}\n${branch}`, {
+            status: 200,
+            body: { ref: `refs/heads/${branch}`, object: { sha } },
+        });
+        this.#commits.set(`${token}\n${owner}\n${repo}\n${sha}`, {
+            status: 200,
+            body: { sha, message: 'Template commit', tree: { sha: `tree-${sha}` } },
+        });
+    }
+
+    registerBranchHeadError({
+        token,
+        owner,
+        repo,
+        branch,
+        status,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        branch: string;
+        status: number;
+    }) {
+        this.#branchHeads.set(`${token}\n${owner}\n${repo}\n${branch}`, {
+            status,
+            body: { message: 'fake branch head failure', status: String(status) },
+        });
+    }
+
+    registerBranch({
+        token,
+        owner,
+        repo,
+        branch,
+        sha,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        branch: string;
+        sha: string;
+    }) {
+        this.#branchCreations.set(`${token}\n${owner}\n${repo}\n${branch}`, {
+            status: 201,
+            body: { ref: `refs/heads/${branch}`, object: { sha } },
+        });
+    }
+
+    registerBranchError({
+        token,
+        owner,
+        repo,
+        branch,
+        status,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        branch: string;
+        status: number;
+    }) {
+        this.#branchCreations.set(`${token}\n${owner}\n${repo}\n${branch}`, {
+            status,
+            body: { message: 'fake branch creation failure', status: String(status) },
+        });
+    }
+
+    registerCollaborator({
+        token,
+        owner,
+        repo,
+        username,
+        permission,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        username: string;
+        permission?: string;
+    }) {
+        this.#collaborators.set(`${token}\n${owner}\n${repo}\n${username}`, {
+            // The real GitHub API answers `201`/`204` with an empty body.
+            status: 201,
+            body: typeof permission === 'string' ? { permission } : {},
+        });
+    }
+
+    registerCollaboratorError({
+        token,
+        owner,
+        repo,
+        username,
+        status,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        username: string;
+        status: number;
+    }) {
+        this.#collaborators.set(`${token}\n${owner}\n${repo}\n${username}`, {
+            status,
+            body: { message: 'fake collaborator failure', status: String(status) },
+        });
+    }
+
+    registerInstallation({ org, installationId }: { org: string; installationId: number }) {
+        this.#installations.set(org, { status: 200, body: { id: installationId } });
+        this.#installationTokens.set(String(installationId), {
+            status: 201,
+            body: {
+                token: `installation-token-${installationId}`,
+                expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            },
+        });
+    }
+
+    registerInstallationError({ org, status }: { org: string; status: number }) {
+        this.#installations.set(org, {
+            status,
+            body: { message: 'fake installation failure', status: String(status) },
+        });
+    }
+
+    registerPullRequest({
+        token,
+        owner,
+        repo,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+    }) {
+        this.#pullRequests.set(`${token}\n${owner}\n${repo}`, {
+            status: 201,
+            body: { number: 1, html_url: `https://github.com/${owner}/${repo}/pull/1` },
+        });
+    }
+
+    registerPullRequestError({
+        token,
+        owner,
+        repo,
+        status,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        status: number;
+    }) {
+        this.#pullRequests.set(`${token}\n${owner}\n${repo}`, {
+            status,
+            body: { message: 'fake pull request failure', status: String(status) },
+        });
+    }
+
     /** Makes the next OAuth authorize round-trip sign in as the given token's user (one-shot). */
     authorizeAs({ token }: { token: string }) {
         this.#nextAuthorizeToken = token;
@@ -119,6 +335,14 @@ export class FakeGithub {
         this.#codes.clear();
         this.#refreshTokens.clear();
         this.#repos.clear();
+        this.#templates.clear();
+        this.#branchHeads.clear();
+        this.#branchCreations.clear();
+        this.#collaborators.clear();
+        this.#installations.clear();
+        this.#installationTokens.clear();
+        this.#pullRequests.clear();
+        this.#createdPullRequests.clear();
         this.#nextAuthorizeToken = null;
     }
 
@@ -173,6 +397,120 @@ export class FakeGithub {
             return this.#getUser(token, response);
         if (url.pathname.startsWith('/user/memberships/orgs/') && request.method === 'GET')
             return this.#membership(token, url.pathname, response);
+
+        const generated = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<template>[^/]+)\/generate$/u,
+        );
+        if (generated !== null && request.method === 'POST')
+            return this.#generate(
+                token,
+                decodeURIComponent(generated.groups?.owner ?? ''),
+                decodeURIComponent(generated.groups?.template ?? ''),
+                response,
+            );
+
+        const branchHead = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/git\/ref\/heads\/(?<branch>[^/]+)$/u,
+        );
+        if (branchHead !== null && request.method === 'GET')
+            return this.#branchHead(
+                token,
+                decodeURIComponent(branchHead.groups?.owner ?? ''),
+                decodeURIComponent(branchHead.groups?.repo ?? ''),
+                decodeURIComponent(branchHead.groups?.branch ?? ''),
+                response,
+            );
+
+        const branchRefs = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/git\/refs$/u,
+        );
+        if (branchRefs !== null && request.method === 'POST')
+            return this.#branchCreate(
+                token,
+                decodeURIComponent(branchRefs.groups?.owner ?? ''),
+                decodeURIComponent(branchRefs.groups?.repo ?? ''),
+                response,
+                body,
+            );
+
+        const collaborator = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/collaborators\/(?<username>[^/]+)$/u,
+        );
+        if (collaborator !== null && request.method === 'PUT')
+            return this.#collaborator(
+                token,
+                decodeURIComponent(collaborator.groups?.owner ?? ''),
+                decodeURIComponent(collaborator.groups?.repo ?? ''),
+                decodeURIComponent(collaborator.groups?.username ?? ''),
+                response,
+            );
+
+        const commit = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/git\/commits\/(?<sha>[^/]+)$/u,
+        );
+        if (commit !== null && request.method === 'GET')
+            return this.#commit(
+                token,
+                decodeURIComponent(commit.groups?.owner ?? ''),
+                decodeURIComponent(commit.groups?.repo ?? ''),
+                decodeURIComponent(commit.groups?.sha ?? ''),
+                response,
+            );
+
+        const commits = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/git\/commits$/u,
+        );
+        if (commits !== null && request.method === 'POST')
+            return this.#createCommit(
+                token,
+                decodeURIComponent(commits.groups?.owner ?? ''),
+                decodeURIComponent(commits.groups?.repo ?? ''),
+                response,
+                body,
+            );
+
+        const refUpdate = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/git\/refs\/heads\/(?<branch>[^/]+)$/u,
+        );
+        if (refUpdate !== null && request.method === 'PATCH')
+            return this.#updateBranch(
+                token,
+                decodeURIComponent(refUpdate.groups?.owner ?? ''),
+                decodeURIComponent(refUpdate.groups?.repo ?? ''),
+                decodeURIComponent(refUpdate.groups?.branch ?? ''),
+                response,
+                body,
+            );
+
+        const pullRequest = url.pathname.match(/^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pulls$/u);
+        if (pullRequest !== null && request.method === 'GET')
+            return this.#listPullRequests(
+                token,
+                decodeURIComponent(pullRequest.groups?.owner ?? ''),
+                decodeURIComponent(pullRequest.groups?.repo ?? ''),
+                response,
+            );
+        if (pullRequest !== null && request.method === 'POST')
+            return this.#pullRequest(
+                token,
+                decodeURIComponent(pullRequest.groups?.owner ?? ''),
+                decodeURIComponent(pullRequest.groups?.repo ?? ''),
+                response,
+            );
+
+        const installation = url.pathname.match(/^\/orgs\/(?<org>[^/]+)\/installation$/u);
+        if (installation !== null && request.method === 'GET')
+            return this.#installation(
+                decodeURIComponent(installation.groups?.org ?? ''),
+                response,
+            );
+
+        const installationToken = url.pathname.match(
+            /^\/app\/installations\/(?<id>\d+)\/access_tokens$/u,
+        );
+        if (installationToken !== null && request.method === 'POST')
+            return this.#installationToken(installationToken.groups?.id ?? '', response);
+
         if (url.pathname.startsWith('/orgs/') && request.method === 'GET')
             return this.#orgRepos(token, url.pathname, response);
 
@@ -200,6 +538,98 @@ export class FakeGithub {
                 this.registerRepos(args as { token: string; org: string; repos: string[] }),
             registerReposError: (args) =>
                 this.registerReposError(args as { token: string; org: string; status: number }),
+            registerTemplate: (args) =>
+                this.registerTemplate(
+                    args as {
+                        token: string;
+                        org: string;
+                        template: string;
+                        repoName: string;
+                        defaultBranch?: string;
+                    },
+                ),
+            registerTemplateError: (args) =>
+                this.registerTemplateError(
+                    args as { token: string; org: string; template: string; status: number },
+                ),
+            registerBranchHead: (args) =>
+                this.registerBranchHead(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        branch: string;
+                        sha: string;
+                    },
+                ),
+            registerBranchHeadError: (args) =>
+                this.registerBranchHeadError(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        branch: string;
+                        status: number;
+                    },
+                ),
+            registerBranch: (args) =>
+                this.registerBranch(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        branch: string;
+                        sha: string;
+                    },
+                ),
+            registerBranchError: (args) =>
+                this.registerBranchError(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        branch: string;
+                        status: number;
+                    },
+                ),
+            registerCollaborator: (args) =>
+                this.registerCollaborator(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        username: string;
+                        permission?: string;
+                    },
+                ),
+            registerCollaboratorError: (args) =>
+                this.registerCollaboratorError(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        username: string;
+                        status: number;
+                    },
+                ),
+            registerInstallation: (args) =>
+                this.registerInstallation(args as { org: string; installationId: number }),
+            registerInstallationError: (args) =>
+                this.registerInstallationError(args as { org: string; status: number }),
+            registerPullRequest: (args) =>
+                this.registerPullRequest(
+                    args as { token: string; owner: string; repo: string; title?: string },
+                ),
+            registerPullRequestError: (args) =>
+                this.registerPullRequestError(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        title?: string;
+                        status: number;
+                    },
+                ),
         };
         if (typeof op !== 'string') return respond(response, 400, { message: 'Missing fake op.' });
         const run = ops[op];
@@ -270,5 +700,141 @@ export class FakeGithub {
         if (typeof repos === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });
         respond(response, repos.status, repos.body);
+    }
+
+    #generate(token: string | null, org: string, template: string, response: ServerResponse) {
+        const fixture = this.#templates.get(`${token}\n${org}\n${template}`);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #branchHead(
+        token: string | null,
+        owner: string,
+        repo: string,
+        branch: string,
+        response: ServerResponse,
+    ) {
+        const fixture = this.#branchHeads.get(`${token}\n${owner}\n${repo}\n${branch}`);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #branchCreate(
+        token: string | null,
+        owner: string,
+        repo: string,
+        response: ServerResponse,
+        body: FixtureBody,
+    ) {
+        const fixtureRef = typeof body.ref === 'string' ? body.ref : '';
+        const branch = fixtureRef.replace(/^refs\/heads\//u, '');
+        const fixture = this.#branchCreations.get(`${token}\n${owner}\n${repo}\n${branch}`);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #collaborator(
+        token: string | null,
+        owner: string,
+        repo: string,
+        username: string,
+        response: ServerResponse,
+    ) {
+        const fixture = this.#collaborators.get(`${token}\n${owner}\n${repo}\n${username}`);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #pullRequest(
+        token: string | null,
+        owner: string,
+        repo: string,
+        response: ServerResponse,
+    ) {
+        const fixture = this.#pullRequests.get(`${token}\n${owner}\n${repo}`);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        if (fixture.status >= 200 && fixture.status < 300)
+            this.#createdPullRequests.set(`${token}\n${owner}\n${repo}`, fixture.body);
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #listPullRequests(
+        token: string | null,
+        owner: string,
+        repo: string,
+        response: ServerResponse,
+    ) {
+        const created = this.#createdPullRequests.get(`${token}\n${owner}\n${repo}`);
+        respond(response, 200, typeof created === 'undefined' ? [] : [created]);
+    }
+
+    #commit(
+        token: string | null,
+        owner: string,
+        repo: string,
+        sha: string,
+        response: ServerResponse,
+    ) {
+        const fixture = this.#commits.get(`${token}\n${owner}\n${repo}\n${sha}`);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #createCommit(
+        token: string | null,
+        owner: string,
+        repo: string,
+        response: ServerResponse,
+        body: FixtureBody,
+    ) {
+        const parent = Array.isArray(body.parents) && typeof body.parents[0] === 'string'
+            ? body.parents[0]
+            : 'unknown-parent';
+        const sha = `${parent}-feedback-setup`;
+        const tree = typeof body.tree === 'string' ? body.tree : `tree-${parent}`;
+        const commit = { sha, message: typeof body.message === 'string' ? body.message : '', tree: { sha: tree } };
+        this.#commits.set(`${token}\n${owner}\n${repo}\n${sha}`, { status: 201, body: commit });
+        respond(response, 201, commit);
+    }
+
+    #updateBranch(
+        token: string | null,
+        owner: string,
+        repo: string,
+        branch: string,
+        response: ServerResponse,
+        body: FixtureBody,
+    ) {
+        const sha = typeof body.sha === 'string' ? body.sha : '';
+        this.#branchHeads.set(`${token}\n${owner}\n${repo}\n${branch}`, {
+            status: 200,
+            body: { ref: `refs/heads/${branch}`, object: { sha } },
+        });
+        respond(response, 200, { ref: `refs/heads/${branch}`, object: { sha } });
+    }
+
+    #installation(org: string, response: ServerResponse) {
+        const fixture = this.#installations.get(org);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, {
+                message: 'Not Found',
+                status: '404',
+                documentation_url: 'https://docs.github.com/rest',
+            });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #installationToken(id: string, response: ServerResponse) {
+        const fixture = this.#installationTokens.get(id);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
     }
 }

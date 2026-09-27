@@ -51,3 +51,29 @@ export const CreateAssignmentInputSchema = v.object({
 });
 
 export type CreateAssignmentInput = v.InferOutput<typeof CreateAssignmentInputSchema>;
+
+export const INVITE_TOKEN_MAX_LENGTH = 128;
+
+/** 32 random bytes, base64url-encoded; 43 chars in practice, upper-bounded here. */
+export const InviteTokenSchema = v.pipe(
+    v.string(),
+    v.minLength(1, 'Invitation token is required.'),
+    v.maxLength(
+        INVITE_TOKEN_MAX_LENGTH,
+        `Invitation token must be at most ${INVITE_TOKEN_MAX_LENGTH} characters long.`,
+    ),
+    v.regex(/^[A-Za-z0-9_-]+$/u, 'Invitation token must be a valid token.'),
+);
+
+/** Longest single student name accepted inside a roster; mirrors the programs feature constant. */
+export const ROSTER_ENTRY_NAME_MAX_LENGTH = 120;
+
+export const RosterEntryNameSchema = v.pipe(
+    v.string(),
+    v.trim(),
+    v.minLength(1, 'Choose your name from the roster.'),
+    v.maxLength(
+        ROSTER_ENTRY_NAME_MAX_LENGTH,
+        `Roster entry name must be at most ${ROSTER_ENTRY_NAME_MAX_LENGTH} characters long.`,
+    ),
+);
