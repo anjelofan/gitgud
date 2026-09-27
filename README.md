@@ -36,8 +36,9 @@ Environment variables (see [`.env.example`](.env.example)):
 - `GITHUB_APP_PRIVATE_KEY` (required) — the app's private key (`.pem` download) as a single line with newlines escaped as `\n`; used to mint installation access tokens for assignment repo provisioning.
 - `SESSION_SECRET` (required) — any random high-entropy string; it derives the session secret hashing key and the AES-256-GCM key for stored GitHub tokens.
 - `FAKE_GITHUB_PORT` (optional) — for testing; set this to point the tests to a fake GitHub server at `http://localhost:${FAKE_GITHUB_PORT}`.
-- `GITHUB_ORG` (optional) — GitHub org used for teacher-role resolution until the classroom feature supplies org context per classroom; leave unset to resolve no role.
 - `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` (optional) — OTLP/HTTP telemetry export to the local OpenObserve dev service (see [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md)); the untracked `.env.local` holds them, matching the credentials in [`compose.dev.yml`](compose.dev.yml). Leave unset to disable: in development (`NODE_ENV !== 'production'`), logger output then goes to the console instead of being discarded.
+
+See [`docs/SETTINGS.md`](docs/SETTINGS.md) for the list of settings for the GitHub App.
 
 ## Scripts
 
@@ -68,3 +69,4 @@ Unit/integration tests are colocated with source files as `src/**/*.test.{js,ts}
 - [`REVIEW.md`](REVIEW.md) — code review expectations
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — topic-routed convention documents
 - [`docs/OPENOBSERVE.md`](docs/OPENOBSERVE.md) — OpenObserve dev stack for telemetry collection
+- [`docs/SETTINGS.md`](docs/SETTINGS.md) - list of GitHub App settings
