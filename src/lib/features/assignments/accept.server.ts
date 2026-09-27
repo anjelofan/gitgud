@@ -267,6 +267,11 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             }
         }
 
+        await db
+            .insert(submissions)
+            .values({ assignmentId: args.assignmentId, rosterEntryId, repoName })
+            .onConflictDoNothing();
+
         let head: GitRef;
         try {
             head = await withRetries(
@@ -411,11 +416,6 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             });
             return { status: 'github-unavailable' };
         }
-
-        await db
-            .insert(submissions)
-            .values({ assignmentId: args.assignmentId, rosterEntryId, repoName })
-            .onConflictDoNothing();
 
         logger.info('assignment accepted', { 'assignment.id': args.assignmentId });
         return { status: 'accepted', repoName } as const;
