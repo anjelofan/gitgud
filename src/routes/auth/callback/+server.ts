@@ -8,6 +8,7 @@ import { dev } from '$app/environment';
 import { exchangeCode, getUser, OAUTH_STATE_COOKIE } from '$lib/server/github/oauth';
 import { Logger } from '$lib/server/telemetry/logger';
 import type { OAuthTokenResponse } from '$lib/server/github/contracts';
+import { RETURN_TO_COOKIE, ReturnToSchema } from '$lib/server/auth/return-to';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
 const SERVICE_NAME = 'routes.auth.callback';
@@ -76,6 +77,11 @@ export async function GET({ cookies, url }) {
         });
 
         logger.info('user signed in', { 'user.id': user.id });
-        redirect(303, '/');
+
+        const returnTo = cookies.get(RETURN_TO_COOKIE);
+        cookies.delete(RETURN_TO_COOKIE, { path: '/' });
+        const parsedReturnTo = v.safeParse(ReturnToSchema, returnTo ?? '');
+
+        redirect(303, parsedReturnTo.success ? parsedReturnTo.output : '/');
     });
 }
