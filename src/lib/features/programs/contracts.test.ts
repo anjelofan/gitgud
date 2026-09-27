@@ -6,6 +6,7 @@ import {
     ROSTER_MAX_STUDENTS,
     ROSTER_NAME_MAX_LENGTH,
     ROSTER_SOURCE_MAX_LENGTH,
+    StudentNameSchema,
     StudentRosterSchema,
 } from './contracts.ts';
 
@@ -92,6 +93,14 @@ describe('CreateProgramInputSchema', () => {
             rosterText: null,
         });
         expect(result.success).toBe(false);
+    });
+});
+
+describe('StudentNameSchema', () => {
+    it('trims the student name into a domain value', () => {
+        const result = v.safeParse(StudentNameSchema, '  Ada Lovelace  ');
+        expect(result.success).toBe(true);
+        if (result.success) expect(result.output).toBe('Ada Lovelace');
     });
 });
 

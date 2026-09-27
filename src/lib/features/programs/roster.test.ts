@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseCsvRoster, parseRoster, parseTextRoster } from './roster.ts';
+import {
+    namesToAdd,
+    parseCsvRoster,
+    parseRoster,
+    parseTextRoster,
+    rosterCapacityExceeded,
+} from './roster.ts';
+import { ROSTER_MAX_STUDENTS } from './contracts.ts';
 
 describe('parseCsvRoster', () => {
     it('takes the first column of each row as the student name', () => {
@@ -86,5 +93,35 @@ describe('parseRoster', () => {
         expect(
             parseRoster({ format: 'csv', content: 'Ada Lovelace\nAda Lovelace,Grace Hopper\n' }),
         ).toEqual(['Ada Lovelace']);
+    });
+});
+
+describe('namesToAdd', () => {
+    it('returns only names not already on the roster', () => {
+        expect(namesToAdd(['Ada Lovelace'], ['Ada Lovelace', 'Grace Hopper'])).toEqual([
+            'Grace Hopper',
+        ]);
+    });
+
+    it('matches existing names case-sensitively', () => {
+        expect(namesToAdd(['ada lovelace'], ['Ada Lovelace'])).toEqual(['Ada Lovelace']);
+    });
+
+    it('collapses duplicate incoming names', () => {
+        expect(namesToAdd(['Grace Hopper'], ['Ada Lovelace', 'Ada Lovelace'])).toEqual([
+            'Ada Lovelace',
+        ]);
+    });
+});
+
+describe('rosterCapacityExceeded', () => {
+    it('returns null when the roster stays within the cap', () => {
+        expect(rosterCapacityExceeded(ROSTER_MAX_STUDENTS - 1, 1)).toBeNull();
+    });
+
+    it('returns a stable message when the cap would be exceeded', () => {
+        expect(rosterCapacityExceeded(ROSTER_MAX_STUDENTS, 1)).toBe(
+            `Roster must contain at most ${ROSTER_MAX_STUDENTS} students.`,
+        );
     });
 });
