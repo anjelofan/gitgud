@@ -89,6 +89,39 @@ beforeAll(async () => {
         owner: 'accept-org',
         repo: 'taken-accept-student',
     });
+    await fakeGithub('registerTemplate', {
+        token: 'installation-token-1',
+        org: 'accept-org',
+        template: 'collab-tpl',
+        repoName: 'collab-accept-student',
+        defaultBranch: 'main',
+    });
+    await fakeGithub('registerBranchHead', {
+        token: 'installation-token-1',
+        owner: 'accept-org',
+        repo: 'collab-accept-student',
+        branch: 'main',
+        sha: 'ghi789',
+    });
+    await fakeGithub('registerBranch', {
+        token: 'installation-token-1',
+        owner: 'accept-org',
+        repo: 'collab-accept-student',
+        branch: 'feedback',
+        sha: 'ghi789',
+    });
+    await fakeGithub('registerPullRequest', {
+        token: 'installation-token-1',
+        owner: 'accept-org',
+        repo: 'collab-accept-student',
+    });
+    await fakeGithub('registerCollaboratorError', {
+        token: 'installation-token-1',
+        owner: 'accept-org',
+        repo: 'collab-accept-student',
+        username: 'accept-student',
+        status: 500,
+    });
 });
 beforeEach(async () => {
     await db.execute(sql`TRUNCATE users CASCADE`);
@@ -261,7 +294,7 @@ describe('acceptAssignment', () => {
             ),
         ).toEqual({ status: 'entry-claimed' });
     });
-    it('reuses an existing repo when GitHub reports a name conflict (422)', async () => {
+    it('rejects a repo name collision with no recorded submission (422)', async () => {
         const { student } = await fixtureUsers();
         const { assignment } = await acceptedAssignment({
             assignmentName: 'Taken',
@@ -276,9 +309,27 @@ describe('acceptAssignment', () => {
                 rosterEntryName: 'Jane Doe',
             }),
         );
-        expect(outcome).toEqual({ status: 'accepted', repoName: 'taken-accept-student' });
+        expect(outcome).toEqual({ status: 'github-unavailable' });
+        expect(await db.select().from(submissions)).toEqual([]);
+    });
+    it('records the submission as soon as the repo is created, before later provisioning', async () => {
+        const { student } = await fixtureUsers();
+        const { assignment } = await acceptedAssignment({
+            assignmentName: 'Collab',
+            templateRepo: 'collab-tpl',
+        });
+        const outcome = await acceptAssignment(
+            db,
+            await acceptArgs({
+                student,
+                assignment,
+                org: 'accept-org',
+                rosterEntryName: 'Jane Doe',
+            }),
+        );
+        expect(outcome).toEqual({ status: 'github-unavailable' });
         const [submission] = await db.select().from(submissions);
-        expect(submission?.repoName).toBe('taken-accept-student');
+        expect(submission?.repoName).toBe('collab-accept-student');
     });
     it('returns template-missing when the template repository does not exist (404)', async () => {
         const { student } = await fixtureUsers();
