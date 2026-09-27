@@ -24,3 +24,29 @@ export async function decodeCreateProgramForm(formData: FormData) {
         rosterText: await rosterSource(formData, 'rosterText'),
     };
 }
+
+/** Representation-only decode of the add-roster batch form on the program dashboard. */
+export async function decodeAddRosterBatchForm(formData: FormData) {
+    return {
+        rosterCsv: await rosterSource(formData, 'rosterCsv'),
+        rosterText: await rosterSource(formData, 'rosterText'),
+    };
+}
+
+export function decodeAddStudentForm(formData: FormData) {
+    return { name: stringField(formData, 'name') };
+}
+
+export function decodeRenameStudentForm(formData: FormData) {
+    return {
+        entryId: stringField(formData, 'entryId'),
+        name: stringField(formData, 'name'),
+    };
+}
+
+export function decodeRemoveStudentsForm(formData: FormData) {
+    const entryIds = formData
+        .getAll('entryIds')
+        .filter((value): value is string => typeof value === 'string');
+    return { entryIds };
+}
