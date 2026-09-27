@@ -54,12 +54,21 @@
             <div class="flex flex-col items-start justify-center">
                 <p>{name}</p>
                 {#if login !== null}
-                    <a href={`https://github.com/${login}`} class="text-gray-400 text-sm" target="_blank">@{login}</a>
+                    <a
+                        href={`https://github.com/${login}`}
+                        class="text-sm text-gray-400"
+                        target="_blank"
+                        rel="noopener noreferrer">@{login}</a
+                    >
                 {/if}
             </div>
         </div>
         {#if repoName !== null}
-            <a href={`https://github.com/${program.org}/${repoName}`} target="_blank">See repository</a>
+            <a
+                href={`https://github.com/${program.org}/${repoName}`}
+                target="_blank"
+                rel="noopener noreferrer">See repository</a
+            >
         {/if}
     </div>
 {/each}
