@@ -8,7 +8,7 @@ Commands (see [`package.json`](package.json)):
 | `pnpm test:e2e`       | Playwright end-to-end tests (requires `pnpm build` first) |
 | `pnpm test`           | Unit tests, then end-to-end tests                         |
 | `pnpm test:e2e:setup` | One-time Playwright chromium browser install              |
-| `pnpm test:key`       | Generate the local fake GitHub App RSA key                |
+| `pnpm test:secrets`   | Generate local fake GitHub App secrets                    |
 
 ## Layout
 
@@ -18,14 +18,15 @@ Commands (see [`package.json`](package.json)):
 Before the first test run, generate a local fake GitHub App key:
 
 ```sh
-pnpm test:key
+pnpm test:secrets
 ```
 
-This writes `.env.test.local`, which is gitignored. Key only needs valid RSA
-format; fake GitHub never verifies its signature. Regenerate anytime by
-deleting `.env.test.local` first.
+This writes `.env.test.local`, which is gitignored. It generates the fake App
+client secret, session secret, and RSA private key. The client ID stays in
+committed `.env.test` because it is public. Fake GitHub never verifies the
+RSA signature. Regenerate anytime by deleting `.env.test.local` first.
 
-The fake GitHub server (`tests/fake-github/`) stands in for the real API during tests. The committed [`.env.test`](.env.test) supplies its port (`FAKE_GITHUB_PORT`) and the fake OAuth credentials; the harnesses load it automatically and abort when `FAKE_GITHUB_PORT` is missing or invalid — no shell setup needed. The app itself uses the real GitHub API when the variable is unset.
+The fake GitHub server (`tests/fake-github/`) stands in for the real API during tests. The committed [`.env.test`](.env.test) supplies its port (`FAKE_GITHUB_PORT`), database URL, and public fake client ID. Run `pnpm test:secrets` once to create local fake secrets; harnesses abort with instructions when they are missing. The app itself uses the real GitHub API when the variable is unset.
 
 ## Local Test Database
 

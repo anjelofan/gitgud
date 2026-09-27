@@ -21,7 +21,7 @@
         "test": "pnpm test:unit && pnpm test:e2e",
         "test:e2e": "playwright test",
         "test:e2e:setup": "playwright install chromium",
-        "test:key": "node tests/generate-test-key.js",
+        "test:secrets": "node tests/generate-test-env.js",
         "test:unit": "vitest run",
         "db:generate": "drizzle-kit generate --name",
         "db:migrate": "drizzle-kit migrate",

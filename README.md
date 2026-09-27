@@ -59,7 +59,7 @@ Environment variables (see [`.env.example`](.env.example)):
 
 ## Testing
 
-Unit/integration tests are colocated with source files as `src/**/*.test.{js,ts}`; end-to-end tests live in `tests/`. Run `pnpm test:key` once to generate the local fake GitHub App key, and `pnpm test:e2e:setup` once to install the Playwright chromium browser. Tests never hit the real GitHub API — see [`TESTING.md`](TESTING.md) for details.
+Unit/integration tests are colocated with source files as `src/**/*.test.{js,ts}`; end-to-end tests live in `tests/`. Run `pnpm test:secrets` once to generate local fake GitHub App secrets, and `pnpm test:e2e:setup` once to install the Playwright chromium browser. Tests never hit the real GitHub API — see [`TESTING.md`](TESTING.md) for details.
 
 ## Documentation
 
