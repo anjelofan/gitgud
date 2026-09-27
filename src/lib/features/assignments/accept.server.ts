@@ -259,7 +259,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
         } catch (error) {
             if (!(error instanceof GithubApiError)) throw error;
             switch (error.status) {
-                case 422:
+                case 422: {
                     // A repo left behind by an earlier attempt keeps the
                     // deterministic name. Only adopt it when this assignment
                     // has a recorded submission with that name; otherwise an
@@ -289,6 +289,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
                         'github.repo': repoName,
                     });
                     break;
+                }
                 case 404:
                     logger.error('template repository unavailable for repo creation', error, {
                         'github.org': args.org,

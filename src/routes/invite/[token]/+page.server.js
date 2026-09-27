@@ -66,7 +66,8 @@ export async function load({ cookies, locals: { session }, params }) {
                 name: result.assignment.name,
                 deadline: result.assignment.deadline,
             },
-            unclaimedEntryNames: claimedEntry === null ? unclaimedEntries.map((entry) => entry.name) : [],
+            unclaimedEntryNames:
+                claimedEntry === null ? unclaimedEntries.map((entry) => entry.name) : [],
             claimedEntryName: claimedEntry?.name ?? null,
             acceptedRepo:
                 acceptedSubmission === null

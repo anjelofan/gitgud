@@ -6,7 +6,7 @@
             assignment: Pick<Assignment, 'name' | 'deadline'>;
             unclaimedEntryNames: string[];
             claimedEntryName: string | null;
-            acceptedRepo: { org: string, repoName: string } | null;
+            acceptedRepo: { org: string; repoName: string } | null;
         };
         form?: {
             success?: boolean;
@@ -34,7 +34,7 @@
     let rosterClaim = $state('');
 </script>
 
-<h1 class="font-bold text-3xl lg:text-4xl mb-4">{assignment.name}</h1>
+<h1 class="mb-4 text-3xl font-bold lg:text-4xl">{assignment.name}</h1>
 
 <p class="mb-4">
     <strong>Deadline</strong>: {new Date(assignment.deadline).toLocaleDateString('en-US', {
@@ -65,14 +65,29 @@
             <p>Student: <strong>{claimedEntryName}</strong></p>
         {:else}
             Choose your name:
-            <div class="flex flex-col border mb-4 h-100 bg-csi-grayscale-200 rounded-sm overflow-y-auto">
+            <div
+                class="mb-4 flex h-100 flex-col overflow-y-auto rounded-sm border bg-csi-grayscale-200"
+            >
                 {#each unclaimedEntryNames as name (name)}
-                    <button type="button" class="py-2 px-4 border-b border-black rounded-sm text-left {rosterClaim === name ? 'bg-csi-blue text-csi-white' : 'bg-csi-white'} hover:bg-csi-blue hover:text-csi-white focus:bg-csi-blue focus:text-csi-white" onclick={() => { rosterClaim = name; }}>{name}</button>
+                    <button
+                        type="button"
+                        class="rounded-sm border-b border-black px-4 py-2 text-left {rosterClaim ===
+                        name
+                            ? 'bg-csi-blue text-csi-white'
+                            : 'bg-csi-white'} hover:bg-csi-blue hover:text-csi-white focus:bg-csi-blue focus:text-csi-white"
+                        onclick={() => {
+                            rosterClaim = name;
+                        }}>{name}</button
+                    >
                 {/each}
             </div>
         {/if}
         <input type="hidden" name="name" value={rosterClaim} required />
-        <button type="submit" class="rounded-sm py-2 px-4 border hover:bg-csi-blue hover:text-csi-white focus:bg-csi-blue focus:text-csi-white">Accept assignment</button>
+        <button
+            type="submit"
+            class="rounded-sm border px-4 py-2 hover:bg-csi-blue hover:text-csi-white focus:bg-csi-blue focus:text-csi-white"
+            >Accept assignment</button
+        >
     </form>
     {#if form && form.success !== true}
         <p>{form.message}</p>
