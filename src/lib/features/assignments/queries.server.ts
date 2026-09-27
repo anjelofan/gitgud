@@ -154,6 +154,35 @@ export async function listUnclaimedRosterEntries(db: DbConnection, programId: st
     });
 }
 
+/**
+ * Returns the submission the user has for an assignment — through the roster
+ * entry they claimed — or `null` when they have not accepted it yet.
+ */
+export async function getAcceptedSubmissionForUser(
+    db: DbConnection,
+    assignmentId: string,
+    userId: string,
+) {
+    return await tracer.asyncSpan('get-accepted-submission-for-user', async (span) => {
+        span.setAttributes({ 'assignment.id': assignmentId, 'user.id': userId });
+
+        const [submission] = await db
+            .select({ repoName: submissions.repoName })
+            .from(submissions)
+            .innerJoin(rosterEntries, eq(submissions.rosterEntryId, rosterEntries.id))
+            .where(
+                and(
+                    eq(submissions.assignmentId, assignmentId),
+                    eq(rosterEntries.claimedUserId, userId),
+                ),
+            )
+            .limit(1);
+        if (typeof submission === 'undefined') return null;
+
+        return submission;
+    });
+}
+
 /** Returns the roster entry the user has claimed in a program, if any. */
 export async function getClaimedRosterEntry(db: DbConnection, programId: string, userId: string) {
     return await tracer.asyncSpan('get-claimed-roster-entry', async (span) => {

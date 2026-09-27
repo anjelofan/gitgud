@@ -7,6 +7,7 @@ import { rosterEntries, submissions, users } from '$lib/server/db/schema';
 
 import {
     createAssignmentForProgram,
+    getAcceptedSubmissionForUser,
     getAssignmentByInviteToken,
     getAssignmentForInstructor,
     getClaimedRosterEntry,
@@ -359,5 +360,108 @@ describe('roster entry claim queries', () => {
 
         expect(await getClaimedRosterEntry(db, program.id, studentId)).toEqual({ name: 'Alice' });
         expect(await getClaimedRosterEntry(db, program.id, ownerId)).toBeNull();
+    });
+});
+
+describe('getAcceptedSubmissionForUser', () => {
+    it('returns the submission repo for the user who accepted the assignment', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Accepted Program',
+            org: 'accepted-org',
+            studentNames: ['Alice'],
+        });
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Accepted Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'accepted-template',
+        });
+        if (assignment === null) throw new Error('assignment fixture missing');
+
+        const [entry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(eq(rosterEntries.programId, program.id));
+        if (typeof entry === 'undefined') throw new Error('roster fixture missing');
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(eq(rosterEntries.id, entry.id));
+        await db.insert(submissions).values({
+            assignmentId: assignment.id,
+            rosterEntryId: entry.id,
+            repoName: 'accepted-assignment-student',
+        });
+
+        expect(await getAcceptedSubmissionForUser(db, assignment.id, studentId)).toEqual({
+            repoName: 'accepted-assignment-student',
+        });
+    });
+
+    it('returns null when the submission belongs to another assignment', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Filter Program',
+            org: 'filter-org',
+            studentNames: ['Alice'],
+        });
+        const first = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'First Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'template',
+        });
+        const second = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Second Assignment',
+            deadline: new Date('2026-09-16T18:00:00.000Z'),
+            templateRepo: 'template',
+        });
+        if (first === null || second === null) throw new Error('assignment fixtures missing');
+
+        const [entry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(eq(rosterEntries.programId, program.id));
+        if (typeof entry === 'undefined') throw new Error('roster fixture missing');
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(eq(rosterEntries.id, entry.id));
+        await db.insert(submissions).values({
+            assignmentId: second.id,
+            rosterEntryId: entry.id,
+            repoName: 'second-assignment-repo',
+        });
+
+        expect(await getAcceptedSubmissionForUser(db, first.id, studentId)).toBeNull();
+    });
+
+    it('returns null when the user has not claimed a roster entry', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Unclaimed Program',
+            org: 'unclaimed-org',
+            studentNames: ['Alice'],
+        });
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Unclaimed Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'unclaimed-template',
+        });
+        if (assignment === null) throw new Error('assignment fixture missing');
+
+        expect(await getAcceptedSubmissionForUser(db, assignment.id, ownerId)).toBeNull();
     });
 });

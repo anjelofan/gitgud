@@ -5,6 +5,7 @@ import { acceptAssignment } from '$lib/features/assignments/accept.server.js';
 import { db } from '$lib/server/db';
 import { dev } from '$app/environment';
 import {
+    getAcceptedSubmissionForUser,
     getAssignmentByInviteToken,
     getClaimedRosterEntry,
     listUnclaimedRosterEntries,
@@ -54,9 +55,10 @@ export async function load({ cookies, locals: { session }, params }) {
             'program.id': result.program.id,
         });
 
-        const [unclaimedEntries, claimedEntry] = await Promise.all([
+        const [unclaimedEntries, claimedEntry, acceptedSubmission] = await Promise.all([
             listUnclaimedRosterEntries(db, result.program.id),
             getClaimedRosterEntry(db, result.program.id, session.user.id),
+            getAcceptedSubmissionForUser(db, result.assignment.id, session.user.id),
         ]);
 
         return {
@@ -64,9 +66,12 @@ export async function load({ cookies, locals: { session }, params }) {
                 name: result.assignment.name,
                 deadline: result.assignment.deadline,
             },
-            program: { name: result.program.name, org: result.program.org },
-            unclaimedEntryNames: unclaimedEntries.map((entry) => entry.name),
+            unclaimedEntryNames: claimedEntry === null ? unclaimedEntries.map((entry) => entry.name) : [],
             claimedEntryName: claimedEntry?.name ?? null,
+            acceptedRepo:
+                acceptedSubmission === null
+                    ? null
+                    : { org: result.program.org, repoName: acceptedSubmission.repoName },
         };
     });
 }

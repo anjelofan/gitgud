@@ -1,13 +1,12 @@
 <script lang="ts">
-    import type { Assignment, Program } from '$lib/server/db/schema';
-    import { resolve } from '$app/paths';
+    import type { Assignment } from '$lib/server/db/schema';
 
     interface Props {
         data: {
             assignment: Pick<Assignment, 'name' | 'deadline'>;
-            program: Pick<Program, 'name' | 'org'>;
             unclaimedEntryNames: string[];
             claimedEntryName: string | null;
+            acceptedRepo: { org: string, repoName: string } | null;
         };
         form?: {
             success?: boolean;
@@ -20,12 +19,17 @@
     }
 
     let { data, form }: Props = $props();
-    let { assignment, program, unclaimedEntryNames, claimedEntryName } = $derived(data);
-    let repoUrl = $derived(
+    let { assignment, unclaimedEntryNames, claimedEntryName, acceptedRepo } = $derived(data);
+    let formRepo = $derived(
         form?.success === true && typeof form.repoName === 'string' && typeof form.org === 'string'
-            ? `https://github.com/${form.org}/${form.repoName}`
+            ? { org: form.org, repoName: form.repoName }
             : null,
     );
+    let repo = $derived(formRepo ?? acceptedRepo);
+    let repoUrl = $derived(
+        repo === null ? null : `https://github.com/${repo.org}/${repo.repoName}`,
+    );
+    let alreadyAccepted = $derived(formRepo === null || form?.already === true);
 </script>
 
 <a href={resolve('/')}>← Back to dashboard</a>
