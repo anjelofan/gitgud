@@ -235,9 +235,9 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             return { status: 'already-accepted', repoName: existingSubmission.repoName } as const;
         }
 
-        const instructorToken = await getOrgInstallationToken(args.org);
-        if (instructorToken === null) {
-            logger.fatal('github app is not installed on the organization', void 0, {
+        const installationToken = await getOrgInstallationToken(args.org);
+        if (installationToken === null) {
+            logger.error('github app is not installed on the organization', void 0, {
                 'program.id': args.programId,
                 'github.org': args.org,
             });
@@ -250,7 +250,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
         let defaultBranch = 'main';
         try {
             const created = await createRepoFromTemplate(
-                instructorToken,
+                installationToken,
                 args.org,
                 args.templateRepo,
                 repoName,
@@ -290,7 +290,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
                     });
                     break;
                 case 404:
-                    logger.fatal('template repository unavailable for repo creation', error, {
+                    logger.error('template repository unavailable for repo creation', error, {
                         'github.org': args.org,
                         'github.repo': args.templateRepo,
                     });
@@ -311,7 +311,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
         let head: GitRef;
         try {
             head = await withRetries(
-                () => getBranchHead(instructorToken, args.org, repoName, defaultBranch),
+                () => getBranchHead(installationToken, args.org, repoName, defaultBranch),
                 {
                     attempts: BRANCH_READ_ATTEMPTS,
                     baseDelayMs: BRANCH_READ_BASE_DELAY_MS,
@@ -329,7 +329,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             switch (error.status) {
                 case 404:
                 case 409:
-                    logger.fatal(
+                    logger.error(
                         'repository did not materialize before the retries ran out',
                         error,
                         {
@@ -346,7 +346,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
         }
 
         try {
-            await createBranch(instructorToken, args.org, repoName, 'feedback', head.object.sha);
+            await createBranch(installationToken, args.org, repoName, 'feedback', head.object.sha);
         } catch (error) {
             if (!(error instanceof GithubApiError)) throw error;
             switch (error.status) {
@@ -365,10 +365,10 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
         let feedbackPullRequests: PullRequest[];
         try {
             feedbackPullRequests = await listOpenPullRequests(
-                instructorToken,
+                installationToken,
                 args.org,
                 repoName,
-                'main',
+                defaultBranch,
                 'feedback',
             );
         } catch (error) {
@@ -382,14 +382,14 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
         if (feedbackPullRequests.length === 0) {
             try {
                 const currentCommit = await getCommit(
-                    instructorToken,
+                    installationToken,
                     args.org,
                     repoName,
                     head.object.sha,
                 );
                 if (currentCommit.message !== FEEDBACK_SETUP_COMMIT_MESSAGE) {
                     const setupCommit = await createCommit(
-                        instructorToken,
+                        installationToken,
                         args.org,
                         repoName,
                         FEEDBACK_SETUP_COMMIT_MESSAGE,
@@ -397,10 +397,10 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
                         currentCommit.sha,
                     );
                     await updateBranch(
-                        instructorToken,
+                        installationToken,
                         args.org,
                         repoName,
-                        'main',
+                        defaultBranch,
                         setupCommit.sha,
                     );
                 }
@@ -414,7 +414,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
 
             try {
                 await createPullRequest(
-                    instructorToken,
+                    installationToken,
                     args.org,
                     repoName,
                     feedbackPullRequestFor(defaultBranch),
@@ -423,10 +423,10 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
                 if (!(error instanceof GithubApiError)) throw error;
                 if (error.status === 422) {
                     const existing = await listOpenPullRequests(
-                        instructorToken,
+                        installationToken,
                         args.org,
                         repoName,
-                        'main',
+                        defaultBranch,
                         'feedback',
                     );
                     if (existing.length > 0) {
@@ -449,7 +449,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
         }
 
         try {
-            await addCollaborator(instructorToken, args.org, repoName, args.userLogin, 'push');
+            await addCollaborator(installationToken, args.org, repoName, args.userLogin, 'push');
         } catch (error) {
             if (!(error instanceof GithubApiError)) throw error;
             logger.error('github collaborator invitation failed', error, {
