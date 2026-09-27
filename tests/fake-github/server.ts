@@ -56,6 +56,7 @@ export class FakeGithub {
     #commits = new Map<string, { status: number; body: unknown }>();
     #branchCreations = new Map<string, { status: number; body: unknown }>();
     #collaborators = new Map<string, { status: number; body: unknown }>();
+    #collaboratorPermissions = new Map<string, string>();
     #installations = new Map<string, { status: number; body: unknown }>();
     #installationTokens = new Map<string, { status: number; body: unknown }>();
     #pullRequests = new Map<string, { status: number; body: unknown }>();
@@ -237,8 +238,12 @@ export class FakeGithub {
         this.#collaborators.set(`${token}\n${owner}\n${repo}\n${username}`, {
             // The real GitHub API answers `201`/`204` with an empty body.
             status: 201,
-            body: typeof permission === 'string' ? { permission } : {},
+            body: {},
         });
+        this.#collaboratorPermissions.set(
+            `${token}\n${owner}\n${repo}\n${username}`,
+            typeof permission === 'string' ? permission : 'push',
+        );
     }
 
     registerCollaboratorError({
@@ -278,10 +283,27 @@ export class FakeGithub {
         });
     }
 
-    registerPullRequest({ token, owner, repo }: { token: string; owner: string; repo: string }) {
+    registerPullRequest({
+        token,
+        owner,
+        repo,
+        head = 'main',
+        base = 'feedback',
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        head?: string;
+        base?: string;
+    }) {
         this.#pullRequests.set(`${token}\n${owner}\n${repo}`, {
             status: 201,
-            body: { number: 1, html_url: `https://github.com/${owner}/${repo}/pull/1` },
+            body: {
+                number: 1,
+                html_url: `https://github.com/${owner}/${repo}/pull/1`,
+                head: { ref: head },
+                base: { ref: base },
+            },
         });
     }
 
@@ -331,6 +353,7 @@ export class FakeGithub {
         this.#branchHeads.clear();
         this.#branchCreations.clear();
         this.#collaborators.clear();
+        this.#collaboratorPermissions.clear();
         this.#installations.clear();
         this.#installationTokens.clear();
         this.#pullRequests.clear();
@@ -399,6 +422,7 @@ export class FakeGithub {
                 decodeURIComponent(generated.groups?.owner ?? ''),
                 decodeURIComponent(generated.groups?.template ?? ''),
                 response,
+                body,
             );
 
         const branchHead = url.pathname.match(
@@ -435,6 +459,7 @@ export class FakeGithub {
                 decodeURIComponent(collaborator.groups?.repo ?? ''),
                 decodeURIComponent(collaborator.groups?.username ?? ''),
                 response,
+                body,
             );
 
         const commit = url.pathname.match(
@@ -482,6 +507,8 @@ export class FakeGithub {
                 token,
                 decodeURIComponent(pullRequest.groups?.owner ?? ''),
                 decodeURIComponent(pullRequest.groups?.repo ?? ''),
+                url.searchParams.get('head'),
+                url.searchParams.get('base'),
                 response,
             );
         if (pullRequest !== null && request.method === 'POST')
@@ -490,6 +517,7 @@ export class FakeGithub {
                 decodeURIComponent(pullRequest.groups?.owner ?? ''),
                 decodeURIComponent(pullRequest.groups?.repo ?? ''),
                 response,
+                body,
             );
 
         const installation = url.pathname.match(/^\/orgs\/(?<org>[^/]+)\/installation$/u);
@@ -693,10 +721,30 @@ export class FakeGithub {
         respond(response, repos.status, repos.body);
     }
 
-    #generate(token: string | null, org: string, template: string, response: ServerResponse) {
+    #generate(
+        token: string | null,
+        org: string,
+        template: string,
+        response: ServerResponse,
+        body: FixtureBody,
+    ) {
         const fixture = this.#templates.get(`${token}\n${org}\n${template}`);
         if (typeof fixture === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });
+        if (fixture.status >= 200 && fixture.status < 300) {
+            const expected = fixture.body as { name?: unknown };
+            if (body.owner !== org || body.private !== true)
+                return respond(response, 400, {
+                    message: 'fake generate: expected owner and private: true',
+                    status: '400',
+                });
+            // A mismatched `name` is how GitHub reports an existing repo.
+            if (body.name !== expected.name)
+                return respond(response, 422, {
+                    message: 'fake generate: repository name already exists',
+                    status: '422',
+                });
+        }
         respond(response, fixture.status, fixture.body);
     }
 
@@ -734,25 +782,61 @@ export class FakeGithub {
         repo: string,
         username: string,
         response: ServerResponse,
+        body: FixtureBody,
     ) {
         const fixture = this.#collaborators.get(`${token}\n${owner}\n${repo}\n${username}`);
         if (typeof fixture === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });
+        if (fixture.status >= 200 && fixture.status < 300) {
+            const expected =
+                this.#collaboratorPermissions.get(`${token}\n${owner}\n${repo}\n${username}`) ??
+                'push';
+            if (body.permission !== expected)
+                return respond(response, 422, {
+                    message: 'fake collaborator: permission mismatch',
+                    status: '422',
+                });
+        }
         respond(response, fixture.status, fixture.body);
     }
 
-    #pullRequest(token: string | null, owner: string, repo: string, response: ServerResponse) {
+    #pullRequest(
+        token: string | null,
+        owner: string,
+        repo: string,
+        response: ServerResponse,
+        body: FixtureBody,
+    ) {
         const fixture = this.#pullRequests.get(`${token}\n${owner}\n${repo}`);
         if (typeof fixture === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });
-        if (fixture.status >= 200 && fixture.status < 300)
+        if (fixture.status >= 200 && fixture.status < 300) {
+            const expected = fixture.body as { head?: { ref?: unknown }; base?: { ref?: unknown } };
+            if (body.head !== expected.head?.ref || body.base !== expected.base?.ref)
+                return respond(response, 422, {
+                    message: 'fake pull request: head/base mismatch',
+                    status: '422',
+                });
             this.#createdPullRequests.set(`${token}\n${owner}\n${repo}`, fixture.body);
+        }
         respond(response, fixture.status, fixture.body);
     }
 
-    #listPullRequests(token: string | null, owner: string, repo: string, response: ServerResponse) {
+    #listPullRequests(
+        token: string | null,
+        owner: string,
+        repo: string,
+        head: string | null,
+        base: string | null,
+        response: ServerResponse,
+    ) {
         const created = this.#createdPullRequests.get(`${token}\n${owner}\n${repo}`);
-        respond(response, 200, typeof created === 'undefined' ? [] : [created]);
+        if (typeof created === 'undefined') return respond(response, 200, []);
+        const pullRequest = created as { head?: { ref?: unknown }; base?: { ref?: unknown } };
+        const matches =
+            (head === null || head === `${owner}:${String(pullRequest.head?.ref)}`) &&
+            (base === null || base === String(pullRequest.base?.ref));
+        respond(response, 200, matches ? [created] : []);
     }
 
     #commit(
