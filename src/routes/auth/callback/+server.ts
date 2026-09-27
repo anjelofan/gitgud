@@ -31,6 +31,22 @@ export async function GET({ cookies, url }) {
             'github.oauth.code_present': code !== null,
         });
 
+        // GitHub redirects back with `error` query params when the authorize
+        // step itself fails (e.g. a mismatched Callback URL registration).
+        const githubError = url.searchParams.get('error');
+        if (githubError !== null) {
+            const descriptions: Record<string, string> = {
+                redirect_uri_mismatch:
+                    'Sign-in failed: the GitHub App Callback URL does not match the requested redirect.',
+                access_denied: 'Sign-in canceled: the authorization was denied.',
+            };
+            logger.fatal('github oauth authorize failed', void 0, {
+                'github.oauth.error': githubError,
+                'github.oauth.error_description': url.searchParams.get('error_description') ?? '',
+            });
+            error(400, descriptions[githubError] ?? `Sign-in failed: ${githubError}.`);
+        }
+
         let cookiePayload: unknown = null;
         try {
             cookiePayload = JSON.parse(cookies.get(OAUTH_STATE_COOKIE) ?? 'null');
