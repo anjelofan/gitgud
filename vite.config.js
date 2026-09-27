@@ -11,6 +11,9 @@ import { resolveFakeGitHubPort } from './tests/fake-github/port.ts';
 // builds and `pnpm dev` are unaffected.
 if (process.env.VITEST === 'true') {
     loadEnvFile({ path: '.env.test' });
+    loadEnvFile({ path: '.env.test.local' });
+    if (typeof process.env.GITHUB_APP_PRIVATE_KEY !== 'string')
+        throw new Error('GITHUB_APP_PRIVATE_KEY missing. Run `pnpm test:key` first.');
     resolveFakeGitHubPort();
 }
 
