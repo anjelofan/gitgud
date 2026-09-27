@@ -29,9 +29,19 @@ export const rosterEntries = pgTable(
             .notNull()
             .references(() => programs.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
+        claimedUserId: uuid('claimed_user_id').references(() => users.id, {
+            onDelete: 'set null',
+        }),
+        claimedAt: timestamp('claimed_at', { withTimezone: true }),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     },
-    (table) => [uniqueIndex('roster_entries_program_id_name_idx').on(table.programId, table.name)],
+    (table) => [
+        uniqueIndex('roster_entries_program_id_name_idx').on(table.programId, table.name),
+        uniqueIndex('roster_entries_program_id_claimed_user_id_idx').on(
+            table.programId,
+            table.claimedUserId,
+        ),
+    ],
 );
 
 export type Program = typeof programs.$inferSelect;

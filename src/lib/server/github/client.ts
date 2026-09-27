@@ -88,7 +88,9 @@ async function requestJson<T>(
             throw new GithubApiError(response.status, url.toString(), snippet);
         }
 
-        const json = await response.json();
+        // `204 No Content` (and some `201` responses) carry an empty body; parse it as `{}`.
+        const text = await response.text();
+        const json = text.length === 0 ? {} : (JSON.parse(text) as unknown);
         const parsed = v.parse(schema, json);
         span.setStatus({ code: SpanStatusCode.OK });
         return parsed;

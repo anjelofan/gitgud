@@ -5,6 +5,14 @@ import { resolveFakeGitHubPort } from './tests/fake-github/port.ts';
 
 // Load the committed test environment, then derive everything from it.
 loadEnvFile({ path: '.env.test' });
+loadEnvFile({ path: '.env.test.local' });
+const requiredTestSecrets = [
+    'GITHUB_APP_CLIENT_SECRET',
+    'SESSION_SECRET',
+    'GITHUB_APP_PRIVATE_KEY',
+];
+if (requiredTestSecrets.some((name) => typeof process.env[name] !== 'string'))
+    throw new Error('Test secrets missing. Run `pnpm test:secrets` first.');
 const fakeGitHubPort = resolveFakeGitHubPort();
 
 const testEnv = {
@@ -12,6 +20,7 @@ const testEnv = {
     SESSION_SECRET: process.env.SESSION_SECRET,
     GITHUB_APP_CLIENT_ID: process.env.GITHUB_APP_CLIENT_ID,
     GITHUB_APP_CLIENT_SECRET: process.env.GITHUB_APP_CLIENT_SECRET,
+    GITHUB_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY,
 };
 
 export default defineConfig({

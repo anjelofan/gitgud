@@ -10,6 +10,6 @@
     <link rel="icon" href={favicon} />
 </svelte:head>
 
-<main>
+<main class="mx-20 my-10">
     {@render children()}
 </main>

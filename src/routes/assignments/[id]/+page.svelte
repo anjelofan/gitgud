@@ -6,11 +6,17 @@
         data: {
             assignment: Pick<Assignment, 'name' | 'deadline' | 'inviteToken' | 'templateRepo'>;
             program: Pick<Program, 'name' | 'id' | 'org'>;
+            students: {
+                name: string;
+                login: string | null;
+                avatarUrl: string | null;
+                repoName: string | null;
+            }[];
         };
     }
 
     let { data }: Props = $props();
-    let { assignment, program } = $derived(data);
+    let { assignment, program, students } = $derived(data);
 </script>
 
 <a href={resolve('/programs/[id]', { id: program.id })}> ← Back to {program.name}</a>
@@ -38,3 +44,31 @@
         {assignment.templateRepo}</a
     >
 </p>
+
+{#each students as { name, login, avatarUrl, repoName }, idx (idx)}
+    <div class="flex items-center justify-between">
+        <div class="flex items-center justify-start">
+            {#if avatarUrl !== null}
+                <img src={avatarUrl} alt={`${login}'s avatar`} class="size-15" />
+            {/if}
+            <div class="flex flex-col items-start justify-center">
+                <p>{name}</p>
+                {#if login !== null}
+                    <a
+                        href={`https://github.com/${login}`}
+                        class="text-sm text-gray-400"
+                        target="_blank"
+                        rel="noopener noreferrer">@{login}</a
+                    >
+                {/if}
+            </div>
+        </div>
+        {#if repoName !== null}
+            <a
+                href={`https://github.com/${program.org}/${repoName}`}
+                target="_blank"
+                rel="noopener noreferrer">See repository</a
+            >
+        {/if}
+    </div>
+{/each}

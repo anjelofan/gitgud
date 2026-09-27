@@ -47,6 +47,7 @@ export async function load({ locals: { session }, params }) {
         return {
             assignment: { name, deadline, inviteToken, templateRepo },
             program: { name: programName, id: programId, org },
+            students: result.students,
         };
     });
 }

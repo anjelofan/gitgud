@@ -19,3 +19,43 @@ export type OAuthTokenResponse = v.InferOutput<typeof OAuthTokenResponseSchema>;
 
 export const OrgReposSchema = v.array(v.object({ name: v.string() }));
 export type OrgRepos = v.InferOutput<typeof OrgReposSchema>;
+
+/** Repository created from a template; `default_branch` drives feedback-branch creation. */
+export const GeneratedRepoSchema = v.object({
+    name: v.string(),
+    default_branch: v.string(),
+});
+export type GeneratedRepo = v.InferOutput<typeof GeneratedRepoSchema>;
+
+export const GitRefSchema = v.object({
+    ref: v.string(),
+    object: v.object({ sha: v.string() }),
+});
+export type GitRef = v.InferOutput<typeof GitRefSchema>;
+
+export const GitCommitSchema = v.object({
+    sha: v.string(),
+    message: v.string(),
+    tree: v.object({ sha: v.string() }),
+});
+export type GitCommit = v.InferOutput<typeof GitCommitSchema>;
+
+/** `PUT /collaborators` answers `201`/`204` with an empty body. */
+export const CollaboratorResponseSchema = v.looseObject({});
+
+/** Installation of the GitHub App on an org; `id` mints installation tokens. */
+export const AppInstallationSchema = v.object({ id: v.number() });
+export type AppInstallation = v.InferOutput<typeof AppInstallationSchema>;
+
+export const InstallationTokenSchema = v.object({
+    token: v.string(),
+    expires_at: v.string(),
+});
+export type InstallationToken = v.InferOutput<typeof InstallationTokenSchema>;
+
+export const PullRequestSchema = v.object({
+    number: v.number(),
+    html_url: v.string(),
+});
+export type PullRequest = v.InferOutput<typeof PullRequestSchema>;
+export const PullRequestsSchema = v.array(PullRequestSchema);

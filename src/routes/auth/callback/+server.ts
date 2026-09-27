@@ -8,6 +8,7 @@ import { dev } from '$app/environment';
 import { exchangeCode, getUser, OAUTH_STATE_COOKIE } from '$lib/server/github/oauth';
 import { Logger } from '$lib/server/telemetry/logger';
 import type { OAuthTokenResponse } from '$lib/server/github/contracts';
+import { RETURN_TO_COOKIE, ReturnToSchema } from '$lib/server/auth/return-to';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
 const SERVICE_NAME = 'routes.auth.callback';
@@ -29,6 +30,22 @@ export async function GET({ cookies, url }) {
             'github.oauth.state_present': state !== null,
             'github.oauth.code_present': code !== null,
         });
+
+        // GitHub redirects back with `error` query params when the authorize
+        // step itself fails (e.g. a mismatched Callback URL registration).
+        const githubError = url.searchParams.get('error');
+        if (githubError !== null) {
+            const descriptions: Record<string, string> = {
+                redirect_uri_mismatch:
+                    'Sign-in failed: the GitHub App Callback URL does not match the requested redirect.',
+                access_denied: 'Sign-in canceled: the authorization was denied.',
+            };
+            logger.fatal('github oauth authorize failed', void 0, {
+                'github.oauth.error': githubError,
+                'github.oauth.error_description': url.searchParams.get('error_description') ?? '',
+            });
+            error(400, descriptions[githubError] ?? `Sign-in failed: ${githubError}.`);
+        }
 
         let cookiePayload: unknown = null;
         try {
@@ -76,6 +93,11 @@ export async function GET({ cookies, url }) {
         });
 
         logger.info('user signed in', { 'user.id': user.id });
-        redirect(303, '/');
+
+        const returnTo = cookies.get(RETURN_TO_COOKIE);
+        cookies.delete(RETURN_TO_COOKIE, { path: '/' });
+        const parsedReturnTo = v.safeParse(ReturnToSchema, returnTo ?? '');
+
+        redirect(303, parsedReturnTo.success ? parsedReturnTo.output : '/');
     });
 }

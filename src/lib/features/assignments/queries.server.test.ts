@@ -1,14 +1,18 @@
+import { and, eq, sql } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { eq, sql } from 'drizzle-orm';
 
 import { createProgramWithRoster } from '$lib/features/programs/queries.server';
 import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
+import { rosterEntries, submissions, users } from '$lib/server/db/schema';
 
 import {
     createAssignmentForProgram,
+    getAcceptedSubmissionForUser,
+    getAssignmentByInviteToken,
     getAssignmentForInstructor,
+    getClaimedRosterEntry,
     listAssignmentsForProgram,
+    listUnclaimedRosterEntries,
 } from './queries.server.ts';
 
 const INSTRUCTOR = { githubId: 201, login: 'assignments-instructor', avatar_url: null };
@@ -134,6 +138,109 @@ describe('listAssignmentsForProgram', () => {
 });
 
 describe('getAssignmentForInstructor', () => {
+    it('returns every roster entry with matching submission data', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const [student] = await db
+            .insert(users)
+            .values({
+                githubId: 203,
+                login: 'student-cat',
+                avatarUrl: 'https://avatars.example/student-cat.png',
+            })
+            .returning();
+        if (typeof student === 'undefined') throw new Error('student fixture missing');
+
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Dashboard Program',
+            org: 'dashboard-org',
+            studentNames: ['Alice', 'Bob'],
+        });
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Dashboard Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'dashboard-template',
+        });
+        expect(assignment).not.toBeNull();
+        if (assignment === null) return;
+
+        const [alice] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, 'Alice')));
+        if (typeof alice === 'undefined') throw new Error('roster fixture missing');
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: student.id, claimedAt: new Date() })
+            .where(eq(rosterEntries.id, alice.id));
+        await db.insert(submissions).values({
+            assignmentId: assignment.id,
+            rosterEntryId: alice.id,
+            repoName: 'dashboard-assignment-student-cat',
+        });
+
+        const stored = await getAssignmentForInstructor(db, assignment.id, ownerId);
+        expect(stored).not.toBeNull();
+        if (stored === null) return;
+
+        expect(stored.students.sort((left, right) => left.name.localeCompare(right.name))).toEqual([
+            {
+                name: 'Alice',
+                login: 'student-cat',
+                avatarUrl: 'https://avatars.example/student-cat.png',
+                repoName: 'dashboard-assignment-student-cat',
+            },
+            { name: 'Bob', login: null, avatarUrl: null, repoName: null },
+        ]);
+    });
+
+    it('does not attach a submission from another assignment', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Assignment Filter Program',
+            org: 'assignment-filter-org',
+            studentNames: ['Alice'],
+        });
+        const first = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'First Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'template',
+        });
+        const second = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Second Assignment',
+            deadline: new Date('2026-09-16T18:00:00.000Z'),
+            templateRepo: 'template',
+        });
+        expect(first).not.toBeNull();
+        expect(second).not.toBeNull();
+        if (first === null || second === null) return;
+
+        const [entry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(eq(rosterEntries.programId, program.id));
+        if (typeof entry === 'undefined') throw new Error('roster fixture missing');
+        await db.insert(submissions).values({
+            assignmentId: second.id,
+            rosterEntryId: entry.id,
+            repoName: 'second-assignment-repo',
+        });
+
+        const stored = await getAssignmentForInstructor(db, first.id, ownerId);
+        expect(stored).not.toBeNull();
+        if (stored === null) return;
+        expect(stored.students).toEqual([
+            { name: 'Alice', login: null, avatarUrl: null, repoName: null },
+        ]);
+    });
+
     it('returns the assignment with program context for the owner', async () => {
         const ownerId = await instructorId(INSTRUCTOR.login);
         const program = await ownedProgram(INSTRUCTOR.login, 'DTP 2627a', 'dtp-org');
@@ -180,5 +287,181 @@ describe('getAssignmentForInstructor', () => {
         const missingId = '00000000-0000-0000-0000-000000000000';
 
         expect(await getAssignmentForInstructor(db, missingId, ownerId)).toBeNull();
+    });
+});
+
+describe('getAssignmentByInviteToken', () => {
+    it('returns the assignment and program context for a valid invite token', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const program = await ownedProgram(INSTRUCTOR.login, 'Invite Program', 'invite-org');
+
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Invite Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'dtp2627a-0',
+        });
+        expect(assignment).not.toBeNull();
+        if (assignment === null) return;
+
+        const found = await getAssignmentByInviteToken(db, assignment.inviteToken);
+        expect(found).not.toBeNull();
+        if (found === null) return;
+
+        expect(found.assignment.name).toBe('Invite Assignment');
+        expect(found.program).toEqual({
+            id: program.id,
+            name: 'Invite Program',
+            org: 'invite-org',
+            instructorId: ownerId,
+        });
+    });
+
+    it('returns null for an unknown invite token', async () => {
+        expect(await getAssignmentByInviteToken(db, 'no-such-token')).toBeNull();
+    });
+});
+
+describe('roster entry claim queries', () => {
+    it('lists only unclaimed roster entries', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Claim Program',
+            org: 'claim-org',
+            studentNames: ['Alice', 'Bob', 'Carol'],
+        });
+
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, 'Alice')));
+
+        const unclaimed = await listUnclaimedRosterEntries(db, program.id);
+        expect(unclaimed.map((entry) => entry.name)).toEqual(['Bob', 'Carol']);
+    });
+
+    it('returns the claimed entry for a user', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Claim Program',
+            org: 'claim-org',
+            studentNames: ['Alice', 'Bob'],
+        });
+
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, 'Alice')));
+
+        expect(await getClaimedRosterEntry(db, program.id, studentId)).toEqual({ name: 'Alice' });
+        expect(await getClaimedRosterEntry(db, program.id, ownerId)).toBeNull();
+    });
+});
+
+describe('getAcceptedSubmissionForUser', () => {
+    it('returns the submission repo for the user who accepted the assignment', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Accepted Program',
+            org: 'accepted-org',
+            studentNames: ['Alice'],
+        });
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Accepted Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'accepted-template',
+        });
+        if (assignment === null) throw new Error('assignment fixture missing');
+
+        const [entry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(eq(rosterEntries.programId, program.id));
+        if (typeof entry === 'undefined') throw new Error('roster fixture missing');
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(eq(rosterEntries.id, entry.id));
+        await db.insert(submissions).values({
+            assignmentId: assignment.id,
+            rosterEntryId: entry.id,
+            repoName: 'accepted-assignment-student',
+        });
+
+        expect(await getAcceptedSubmissionForUser(db, assignment.id, studentId)).toEqual({
+            repoName: 'accepted-assignment-student',
+        });
+    });
+
+    it('returns null when the submission belongs to another assignment', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Filter Program',
+            org: 'filter-org',
+            studentNames: ['Alice'],
+        });
+        const first = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'First Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'template',
+        });
+        const second = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Second Assignment',
+            deadline: new Date('2026-09-16T18:00:00.000Z'),
+            templateRepo: 'template',
+        });
+        if (first === null || second === null) throw new Error('assignment fixtures missing');
+
+        const [entry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(eq(rosterEntries.programId, program.id));
+        if (typeof entry === 'undefined') throw new Error('roster fixture missing');
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(eq(rosterEntries.id, entry.id));
+        await db.insert(submissions).values({
+            assignmentId: second.id,
+            rosterEntryId: entry.id,
+            repoName: 'second-assignment-repo',
+        });
+
+        expect(await getAcceptedSubmissionForUser(db, first.id, studentId)).toBeNull();
+    });
+
+    it('returns null when the user has not claimed a roster entry', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Unclaimed Program',
+            org: 'unclaimed-org',
+            studentNames: ['Alice'],
+        });
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Unclaimed Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'unclaimed-template',
+        });
+        if (assignment === null) throw new Error('assignment fixture missing');
+
+        expect(await getAcceptedSubmissionForUser(db, assignment.id, ownerId)).toBeNull();
     });
 });

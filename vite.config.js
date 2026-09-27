@@ -11,6 +11,14 @@ import { resolveFakeGitHubPort } from './tests/fake-github/port.ts';
 // builds and `pnpm dev` are unaffected.
 if (process.env.VITEST === 'true') {
     loadEnvFile({ path: '.env.test' });
+    loadEnvFile({ path: '.env.test.local' });
+    const requiredTestSecrets = [
+        'GITHUB_APP_CLIENT_SECRET',
+        'SESSION_SECRET',
+        'GITHUB_APP_PRIVATE_KEY',
+    ];
+    if (requiredTestSecrets.some((name) => typeof process.env[name] !== 'string'))
+        throw new Error('Test secrets missing. Run `pnpm test:secrets` first.');
     resolveFakeGitHubPort();
 }
 

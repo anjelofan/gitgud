@@ -5,6 +5,10 @@ import {
     ASSIGNMENT_NAME_MAX_LENGTH,
     CreateAssignmentInputSchema,
     DeadlineSchema,
+    INVITE_TOKEN_MAX_LENGTH,
+    InviteTokenSchema,
+    ROSTER_ENTRY_NAME_MAX_LENGTH,
+    RosterEntryNameSchema,
     TEMPLATE_REPO_MAX_LENGTH,
 } from './contracts.ts';
 
@@ -155,5 +159,46 @@ describe('DeadlineSchema', () => {
     it('rejects an impossible calendar date', () => {
         const result = v.safeParse(DeadlineSchema, '2026-02-30T18:00');
         expect(result.success).toBe(false);
+    });
+});
+
+describe('InviteTokenSchema', () => {
+    it('accepts a base64url token', () => {
+        const result = v.safeParse(InviteTokenSchema, 'abcDEF0123_-');
+        expect(result.success).toBe(true);
+        if (result.success) expect(result.output).toBe('abcDEF0123_-');
+    });
+
+    it('rejects an empty token', () => {
+        expect(v.safeParse(InviteTokenSchema, '').success).toBe(false);
+    });
+
+    it('rejects a token over the length cap', () => {
+        expect(
+            v.safeParse(InviteTokenSchema, 'a'.repeat(INVITE_TOKEN_MAX_LENGTH + 1)).success,
+        ).toBe(false);
+    });
+
+    it('rejects a token with non-base64url characters', () => {
+        expect(v.safeParse(InviteTokenSchema, 'not a token').success).toBe(false);
+    });
+});
+
+describe('RosterEntryNameSchema', () => {
+    it('trims a valid roster name', () => {
+        const result = v.safeParse(RosterEntryNameSchema, '  Jane Doe  ');
+        expect(result.success).toBe(true);
+        if (result.success) expect(result.output).toBe('Jane Doe');
+    });
+
+    it('rejects a blank roster name', () => {
+        expect(v.safeParse(RosterEntryNameSchema, '   ').success).toBe(false);
+    });
+
+    it('rejects a roster name over the length cap', () => {
+        expect(
+            v.safeParse(RosterEntryNameSchema, 'n'.repeat(ROSTER_ENTRY_NAME_MAX_LENGTH + 1))
+                .success,
+        ).toBe(false);
     });
 });

@@ -209,7 +209,7 @@ export const actions = {
 
             const { org } = owned.program;
             const [role, orgRepos] = await Promise.all([
-                resolveRole(session.githubToken, org),
+                resolveRole(db, session.githubToken, session.user.id, org),
                 session.githubToken === null
                     ? Promise.resolve(null)
                     : listOrgRepos(session.githubToken, org).catch(() => null),
