@@ -1,4 +1,4 @@
-import type { Roster } from './contracts.ts';
+import { type Roster, ROSTER_MAX_STUDENTS } from './contracts.ts';
 
 /** Strips a leading UTF-8 byte-order mark left by spreadsheet CSV exports. */
 function stripByteOrderMark(content: string) {
@@ -68,4 +68,16 @@ function parseRosterSource(roster: Roster) {
 export function parseRoster(roster: Roster | null) {
     const names = roster === null ? [] : parseRosterSource(roster);
     return [...new Set(names)];
+}
+
+/** Returns incoming names that are not already on the roster (case-sensitive). */
+export function namesToAdd(existingNames: string[], incomingNames: string[]) {
+    const existing = new Set(existingNames);
+    return [...new Set(incomingNames.filter((name) => !existing.has(name)))];
+}
+
+/** When capacity would be exceeded, returns a stable user-facing message; otherwise `null`. */
+export function rosterCapacityExceeded(currentCount: number, addingCount: number) {
+    if (currentCount + addingCount <= ROSTER_MAX_STUDENTS) return null;
+    return `Roster must contain at most ${ROSTER_MAX_STUDENTS} students.`;
 }

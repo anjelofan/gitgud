@@ -57,6 +57,28 @@ export const TextRosterSchema = v.object({ format: v.literal('text'), content: v
 export const RosterSchema = v.union([CsvRosterSchema, TextRosterSchema]);
 export type Roster = v.InferOutput<typeof RosterSchema>;
 
+/** CSV upload wins over pasted text when both roster sources are present. */
+function rosterFromBatchSources(
+    rosterCsv: string | null,
+    rosterText: string | null,
+): Roster | null {
+    if (rosterCsv !== null) return { format: 'csv', content: rosterCsv };
+    if (rosterText !== null) return { format: 'text', content: rosterText };
+    return null;
+}
+
+export const RosterBatchInputSchema = v.pipe(
+    v.object({
+        rosterCsv: RosterSourceSchema,
+        rosterText: RosterSourceSchema,
+    }),
+    v.transform(({ rosterCsv, rosterText }) => ({
+        roster: rosterFromBatchSources(rosterCsv, rosterText),
+    })),
+);
+
+export type RosterBatchInput = v.InferOutput<typeof RosterBatchInputSchema>;
+
 export const CreateProgramInputSchema = v.pipe(
     v.object({
         name: ProgramNameSchema,
@@ -64,24 +86,17 @@ export const CreateProgramInputSchema = v.pipe(
         rosterCsv: RosterSourceSchema,
         rosterText: RosterSourceSchema,
     }),
-    v.transform(({ rosterCsv, rosterText, ...rest }) => {
-        // Use CSV upload when both roster sources are provided.
-        if (rosterCsv !== null) {
-            const roster: Roster = { format: 'csv', content: rosterCsv };
-            return { ...rest, roster };
-        }
-        if (rosterText !== null) {
-            const roster: Roster = { format: 'text', content: rosterText };
-            return { ...rest, roster };
-        }
-        return { ...rest, roster: null };
-    }),
+    v.transform(({ rosterCsv, rosterText, ...rest }) => ({
+        ...rest,
+        roster: rosterFromBatchSources(rosterCsv, rosterText),
+    })),
 );
 
 export type CreateProgramInput = v.InferOutput<typeof CreateProgramInputSchema>;
 
 export const StudentNameSchema = v.pipe(
     v.string(),
+    v.trim(),
     v.minLength(1, 'Student name is required.'),
     v.maxLength(
         ROSTER_NAME_MAX_LENGTH,
@@ -99,3 +114,35 @@ export const StudentRosterSchema = v.pipe(
         `Roster must contain at most ${ROSTER_MAX_STUDENTS} students.`,
     ),
 );
+
+export const RosterEntryIdSchema = v.pipe(v.string(), v.uuid('Select a valid student to update.'));
+
+export const AddStudentInputSchema = v.object({
+    name: StudentNameSchema,
+});
+
+export type AddStudentInput = v.InferOutput<typeof AddStudentInputSchema>;
+
+export const AddRosterBatchInputSchema = RosterBatchInputSchema;
+
+export type AddRosterBatchInput = RosterBatchInput;
+
+export const RenameStudentInputSchema = v.object({
+    entryId: RosterEntryIdSchema,
+    name: StudentNameSchema,
+});
+
+export type RenameStudentInput = v.InferOutput<typeof RenameStudentInputSchema>;
+
+export const RemoveStudentsInputSchema = v.object({
+    entryIds: v.pipe(
+        v.array(RosterEntryIdSchema),
+        v.minLength(1, 'Select at least one student to remove.'),
+        v.maxLength(
+            ROSTER_MAX_STUDENTS,
+            `You can remove at most ${ROSTER_MAX_STUDENTS} students at once.`,
+        ),
+    ),
+});
+
+export type RemoveStudentsInput = v.InferOutput<typeof RemoveStudentsInputSchema>;
