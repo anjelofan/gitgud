@@ -27,7 +27,8 @@ if (missing('GITHUB_APP_PRIVATE_KEY')) {
 }
 
 if (generated.length > 0) {
-    appendFileSync(path, `${generated.join('\n')}\n`);
+    const separator = current.length > 0 && !current.endsWith('\n') ? '\n' : '';
+    appendFileSync(path, `${separator}${generated.join('\n')}\n`);
     process.stdout.write(`Generated ${generated.length.toString()} test values in ${path}.\n`);
 } else {
     process.stdout.write(`${path} already contains all generated test values.\n`);
