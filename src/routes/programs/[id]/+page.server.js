@@ -341,7 +341,7 @@ export const actions = {
                 });
             }
 
-            return { scope: 'roster', success: true };
+            redirect(303, resolve('/programs/[id]', { id: programId }));
         });
     },
 
@@ -438,7 +438,7 @@ export const actions = {
                 });
             }
 
-            return { scope: 'roster', success: true };
+            redirect(303, resolve('/programs/[id]', { id: programId }));
         });
     },
 
@@ -502,7 +502,7 @@ export const actions = {
                 });
             }
 
-            return { scope: 'roster', success: true };
+            redirect(303, resolve('/programs/[id]', { id: programId }));
         });
     },
 
@@ -557,7 +557,7 @@ export const actions = {
                 });
             }
 
-            return { scope: 'roster', success: true };
+            redirect(303, resolve('/programs/[id]', { id: programId }));
         });
     },
 };
