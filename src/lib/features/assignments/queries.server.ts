@@ -108,7 +108,8 @@ export async function getAssignmentForInstructor(
                     eq(submissions.assignmentId, row.assignment.id),
                 ),
             )
-            .where(and(eq(rosterEntries.programId, row.assignment.programId)));
+            .where(eq(rosterEntries.programId, row.assignment.programId))
+            .orderBy(rosterEntries.name);
 
         return { ...row, students };
     });
