@@ -126,7 +126,7 @@ test.describe('assignment invitation journey', () => {
         await page.getByRole('button', { name: 'Sign out' }).click();
         await page.goto(invite);
         await expect(page.getByRole('heading', { level: 1, name: ASSIGNMENT_NAME })).toBeVisible();
-        await expect(page.getByLabel('Choose your name:')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Jane Doe' })).toBeVisible();
     });
 
     test('lets the student claim a roster entry and accept the assignment', async ({ page }) => {
@@ -140,9 +140,9 @@ test.describe('assignment invitation journey', () => {
         await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
         await page.goto(invite);
         await expect(page.getByRole('heading', { level: 1, name: ASSIGNMENT_NAME })).toBeVisible();
-        await expect(page.getByLabel('Choose your name:')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Jane Doe' })).toBeVisible();
 
-        await page.getByLabel('Choose your name:').selectOption('Jane Doe');
+        await page.getByRole('button', { name: 'Jane Doe' }).click();
         await page.getByRole('button', { name: 'Accept assignment' }).click();
 
         await expect(page.getByText('Assignment accepted!')).toBeVisible();
@@ -161,14 +161,13 @@ test.describe('assignment invitation journey', () => {
         await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
         await page.goto(invite);
         await expect(page.getByRole('heading', { level: 1, name: ASSIGNMENT_NAME })).toBeVisible();
-        await expect(page.getByLabel('Choose your name:')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Jane Doe' })).toBeVisible();
 
-        await page.getByLabel('Choose your name:').selectOption('Jane Doe');
+        await page.getByRole('button', { name: 'Jane Doe' }).click();
         await page.getByRole('button', { name: 'Accept assignment' }).click();
         await expect(page.getByText('Assignment accepted!')).toBeVisible();
 
         await page.goto(invite);
-        await page.getByRole('button', { name: 'Accept assignment' }).click();
         await expect(page.getByText('You have already accepted this assignment.')).toBeVisible();
         await expect(page.getByRole('link', { name: REPO_NAME })).toHaveAttribute(
             'href',
@@ -184,7 +183,7 @@ test.describe('assignment invitation journey', () => {
         await page.getByRole('button', { name: 'Sign out' }).click();
         await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
         await page.goto(invite);
-        await page.getByLabel('Choose your name:').selectOption('Jane Doe');
+        await page.getByRole('button', { name: 'Jane Doe' }).click();
         await page.getByRole('button', { name: 'Accept assignment' }).click();
         await expect(page.getByText('Assignment accepted!')).toBeVisible();
 

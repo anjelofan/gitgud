@@ -30,16 +30,14 @@
         repo === null ? null : `https://github.com/${repo.org}/${repo.repoName}`,
     );
     let alreadyAccepted = $derived(formRepo === null || form?.already === true);
+
+    let rosterClaim = $state('');
 </script>
 
-<a href={resolve('/')}>← Back to dashboard</a>
+<h1 class="font-bold text-3xl lg:text-4xl mb-4">{assignment.name}</h1>
 
-<h1>{assignment.name}</h1>
-
-<p>Program: {program.name} (GitHub organization <code>{program.org}</code>)</p>
-
-<p>
-    Deadline: {new Date(assignment.deadline).toLocaleDateString('en-US', {
+<p class="mb-4">
+    <strong>Deadline</strong>: {new Date(assignment.deadline).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
@@ -51,28 +49,30 @@
 </p>
 
 {#if repoUrl !== null}
-    <p>{form?.already ? 'You have already accepted this assignment.' : 'Assignment accepted!'}</p>
+    {#if claimedEntryName !== null}
+        <p>Student: <strong>{claimedEntryName}</strong></p>
+    {/if}
+    <p>{alreadyAccepted ? 'You have already accepted this assignment.' : 'Assignment accepted!'}</p>
     <p>
         Your assignment repository:
-        <a href={repoUrl}>{form?.repoName}</a>
+        <a href={repoUrl} class="text-csi-blue underline">{repo?.repoName}</a>
     </p>
 {:else if unclaimedEntryNames.length === 0 && claimedEntryName === null}
-    <p>No roster entries are available to claim. Contact your instructor.</p>
+    <p>All students are already enrolled. Please contact your instructor if you haven't.</p>
 {:else}
     <form method="POST" action="?/accept">
         {#if claimedEntryName !== null}
-            <p>Accepting as the roster entry <strong>{claimedEntryName}</strong>.</p>
+            <p>Student: <strong>{claimedEntryName}</strong></p>
         {:else}
-            <label>
-                Choose your name:
-                <select name="name" required>
-                    {#each unclaimedEntryNames as name (name)}
-                        <option value={name}>{name}</option>
-                    {/each}
-                </select>
-            </label>
+            Choose your name:
+            <div class="flex flex-col border mb-4 h-100 bg-csi-grayscale-200 rounded-sm overflow-y-auto">
+                {#each unclaimedEntryNames as name (name)}
+                    <button type="button" class="py-2 px-4 border-b border-black rounded-sm text-left {rosterClaim === name ? 'bg-csi-blue text-csi-white' : 'bg-csi-white'} hover:bg-csi-blue hover:text-csi-white focus:bg-csi-blue focus:text-csi-white" onclick={() => { rosterClaim = name; }}>{name}</button>
+                {/each}
+            </div>
         {/if}
-        <button type="submit">Accept assignment</button>
+        <input type="hidden" name="name" value={rosterClaim} required />
+        <button type="submit" class="rounded-sm py-2 px-4 border hover:bg-csi-blue hover:text-csi-white focus:bg-csi-blue focus:text-csi-white">Accept assignment</button>
     </form>
     {#if form && form.success !== true}
         <p>{form.message}</p>
