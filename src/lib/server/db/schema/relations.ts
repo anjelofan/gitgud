@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm';
 
-import { assignments } from './assignments.ts';
+import { assignments, submissions } from './assignments.ts';
 import { githubTokens, sessions, users } from './auth.ts';
 import { programs, rosterEntries } from './programs.ts';
 
@@ -26,16 +26,33 @@ export const programsRelations = relations(programs, ({ many, one }) => ({
     assignments: many(assignments),
 }));
 
-export const rosterEntriesRelations = relations(rosterEntries, ({ one }) => ({
+export const rosterEntriesRelations = relations(rosterEntries, ({ one, many }) => ({
     program: one(programs, {
         fields: [rosterEntries.programId],
         references: [programs.id],
     }),
+    claimedUser: one(users, {
+        fields: [rosterEntries.claimedUserId],
+        references: [users.id],
+    }),
+    submissions: many(submissions),
 }));
 
-export const assignmentsRelations = relations(assignments, ({ one }) => ({
+export const assignmentsRelations = relations(assignments, ({ one, many }) => ({
     program: one(programs, {
         fields: [assignments.programId],
         references: [programs.id],
+    }),
+    submissions: many(submissions),
+}));
+
+export const submissionsRelations = relations(submissions, ({ one }) => ({
+    assignment: one(assignments, {
+        fields: [submissions.assignmentId],
+        references: [assignments.id],
+    }),
+    rosterEntry: one(rosterEntries, {
+        fields: [submissions.rosterEntryId],
+        references: [rosterEntries.id],
     }),
 }));

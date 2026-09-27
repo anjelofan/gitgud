@@ -22,6 +22,13 @@
             "when": 1789322426586,
             "tag": "0002_add-assignments-tables",
             "breakpoints": true
+        },
+        {
+            "idx": 3,
+            "version": "7",
+            "when": 1790269063249,
+            "tag": "0003_add-roster-claim-and-submissions",
+            "breakpoints": true
         }
     ]
 }

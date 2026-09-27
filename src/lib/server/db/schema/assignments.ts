@@ -1,7 +1,7 @@
-import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-import { programs } from './programs.ts';
+import { programs, rosterEntries } from './programs.ts';
 
 export const assignments = pgTable(
     'assignments',
@@ -23,4 +23,27 @@ export const assignments = pgTable(
     (table) => [index('assignments_program_id_idx').on(table.programId)],
 );
 
+export const submissions = pgTable(
+    'submissions',
+    {
+        id: uuid('id').primaryKey().defaultRandom(),
+        assignmentId: uuid('assignment_id')
+            .notNull()
+            .references(() => assignments.id, { onDelete: 'cascade' }),
+        rosterEntryId: uuid('roster_entry_id')
+            .notNull()
+            .references(() => rosterEntries.id, { onDelete: 'cascade' }),
+        repoName: text('repo_name').notNull(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [
+        uniqueIndex('submissions_assignment_id_roster_entry_id_idx').on(
+            table.assignmentId,
+            table.rosterEntryId,
+        ),
+        index('submissions_roster_entry_id_idx').on(table.rosterEntryId),
+    ],
+);
+
 export type Assignment = typeof assignments.$inferSelect;
+export type Submission = typeof submissions.$inferSelect;
