@@ -260,7 +260,31 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             if (!(error instanceof GithubApiError)) throw error;
             switch (error.status) {
                 case 422:
-                    // A repo left behind by an earlier attempt keeps the deterministic name; reuse it.
+                    // A repo left behind by an earlier attempt keeps the
+                    // deterministic name. Only adopt it when this assignment
+                    // has a recorded submission with that name; otherwise an
+                    // unrelated repo is squatting on the name.
+                    const [provenance] = await db
+                        .select({ repoName: submissions.repoName })
+                        .from(submissions)
+                        .where(
+                            and(
+                                eq(submissions.assignmentId, args.assignmentId),
+                                eq(submissions.repoName, repoName),
+                            ),
+                        )
+                        .limit(1);
+                    if (typeof provenance === 'undefined') {
+                        logger.error(
+                            'assignment repo name collides with an unrelated repository',
+                            error,
+                            {
+                                'github.org': args.org,
+                                'github.repo': repoName,
+                            },
+                        );
+                        return { status: 'github-unavailable' };
+                    }
                     logger.debug('assignment repo already exists, reusing it', {
                         'github.repo': repoName,
                     });
