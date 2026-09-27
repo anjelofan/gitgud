@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 
-import { assignments, programs } from '$lib/server/db/schema';
+import { assignments, programs, rosterEntries } from '$lib/server/db/schema';
 import type { DbConnection } from '$lib/server/db';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
@@ -93,5 +93,65 @@ export async function getAssignmentForInstructor(
         if (typeof row === 'undefined') return null;
 
         return { assignment: row.assignment, program: row.program };
+    });
+}
+
+/**
+ * Fetches the assignment an invitation token points to, including the parent
+ * program context needed to accept it. Returns `null` for an unknown token.
+ */
+export async function getAssignmentByInviteToken(db: DbConnection, inviteToken: string) {
+    return await tracer.asyncSpan('get-assignment-by-invite-token', async () => {
+        const [row] = await db
+            .select({
+                assignment: assignments,
+                program: {
+                    id: programs.id,
+                    name: programs.name,
+                    org: programs.org,
+                    instructorId: programs.instructorId,
+                },
+            })
+            .from(assignments)
+            .innerJoin(programs, eq(assignments.programId, programs.id))
+            .where(eq(assignments.inviteToken, inviteToken))
+            .limit(1);
+        if (typeof row === 'undefined') return null;
+
+        return { assignment: row.assignment, program: row.program };
+    });
+}
+
+/** Lists the roster entry names of a program that no student has claimed yet. */
+export async function listUnclaimedRosterEntries(db: DbConnection, programId: string) {
+    return await tracer.asyncSpan('list-unclaimed-roster-entries', async (span) => {
+        span.setAttribute('program.id', programId);
+
+        return await db
+            .select({ name: rosterEntries.name })
+            .from(rosterEntries)
+            .where(and(eq(rosterEntries.programId, programId), isNull(rosterEntries.claimedUserId)))
+            .orderBy(rosterEntries.name);
+    });
+}
+
+/** Returns the roster entry the user has claimed in a program, if any. */
+export async function getClaimedRosterEntry(db: DbConnection, programId: string, userId: string) {
+    return await tracer.asyncSpan('get-claimed-roster-entry', async (span) => {
+        span.setAttributes({ 'program.id': programId, 'user.id': userId });
+
+        const [entry] = await db
+            .select({ name: rosterEntries.name })
+            .from(rosterEntries)
+            .where(
+                and(
+                    eq(rosterEntries.programId, programId),
+                    eq(rosterEntries.claimedUserId, userId),
+                ),
+            )
+            .limit(1);
+        if (typeof entry === 'undefined') return null;
+
+        return entry;
     });
 }

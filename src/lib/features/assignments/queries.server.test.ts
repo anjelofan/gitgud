@@ -1,14 +1,17 @@
+import { and, eq, sql } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { eq, sql } from 'drizzle-orm';
 
 import { createProgramWithRoster } from '$lib/features/programs/queries.server';
 import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
+import { rosterEntries, users } from '$lib/server/db/schema';
 
 import {
     createAssignmentForProgram,
+    getAssignmentByInviteToken,
     getAssignmentForInstructor,
+    getClaimedRosterEntry,
     listAssignmentsForProgram,
+    listUnclaimedRosterEntries,
 } from './queries.server.ts';
 
 const INSTRUCTOR = { githubId: 201, login: 'assignments-instructor', avatar_url: null };
@@ -180,5 +183,78 @@ describe('getAssignmentForInstructor', () => {
         const missingId = '00000000-0000-0000-0000-000000000000';
 
         expect(await getAssignmentForInstructor(db, missingId, ownerId)).toBeNull();
+    });
+});
+
+describe('getAssignmentByInviteToken', () => {
+    it('returns the assignment and program context for a valid invite token', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const program = await ownedProgram(INSTRUCTOR.login, 'Invite Program', 'invite-org');
+
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Invite Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'dtp2627a-0',
+        });
+        expect(assignment).not.toBeNull();
+        if (assignment === null) return;
+
+        const found = await getAssignmentByInviteToken(db, assignment.inviteToken);
+        expect(found).not.toBeNull();
+        if (found === null) return;
+
+        expect(found.assignment.name).toBe('Invite Assignment');
+        expect(found.program).toEqual({
+            id: program.id,
+            name: 'Invite Program',
+            org: 'invite-org',
+            instructorId: ownerId,
+        });
+    });
+
+    it('returns null for an unknown invite token', async () => {
+        expect(await getAssignmentByInviteToken(db, 'no-such-token')).toBeNull();
+    });
+});
+
+describe('roster entry claim queries', () => {
+    it('lists only unclaimed roster entries', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Claim Program',
+            org: 'claim-org',
+            studentNames: ['Alice', 'Bob', 'Carol'],
+        });
+
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, 'Alice')));
+
+        const unclaimed = await listUnclaimedRosterEntries(db, program.id);
+        expect(unclaimed.map((entry) => entry.name)).toEqual(['Bob', 'Carol']);
+    });
+
+    it('returns the claimed entry for a user', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const studentId = await instructorId(OTHER.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: 'Claim Program',
+            org: 'claim-org',
+            studentNames: ['Alice', 'Bob'],
+        });
+
+        await db
+            .update(rosterEntries)
+            .set({ claimedUserId: studentId, claimedAt: new Date() })
+            .where(and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, 'Alice')));
+
+        expect(await getClaimedRosterEntry(db, program.id, studentId)).toEqual({ name: 'Alice' });
+        expect(await getClaimedRosterEntry(db, program.id, ownerId)).toBeNull();
     });
 });
