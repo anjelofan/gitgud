@@ -35,7 +35,10 @@ test.describe('program creation journey', () => {
             page.getByRole('heading', { level: 1, name: 'Systems Programming' }),
         ).toBeVisible();
         await expect(page.getByText('GitHub organization:')).toContainText('e2e-csv-org');
-        await expect(page.getByRole('listitem')).toHaveText(['Ada Lovelace', 'Grace Hopper']);
+        const rosterNames = page.locator('ul li input[name="name"]');
+        await expect(rosterNames).toHaveCount(2);
+        await expect(rosterNames.nth(0)).toHaveValue('Ada Lovelace');
+        await expect(rosterNames.nth(1)).toHaveValue('Grace Hopper');
     });
 
     test('creates a program from a pasted roster', async ({ page }) => {
@@ -55,7 +58,10 @@ test.describe('program creation journey', () => {
         await expect(
             page.getByRole('heading', { level: 1, name: 'Algorithms Seminar' }),
         ).toBeVisible();
-        await expect(page.getByRole('listitem')).toHaveText(['Ada Lovelace', 'Alan Turing']);
+        const rosterNames = page.locator('ul li input[name="name"]');
+        await expect(rosterNames).toHaveCount(2);
+        await expect(rosterNames.nth(0)).toHaveValue('Ada Lovelace');
+        await expect(rosterNames.nth(1)).toHaveValue('Alan Turing');
     });
 
     test('shows the created program on the personal dashboard', async ({ page }) => {
