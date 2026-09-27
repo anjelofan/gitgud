@@ -153,7 +153,7 @@ async function claimRosterEntry(
 
     if (typeof claimedRow === 'undefined') {
         const [existing] = await db
-            .select({ id: rosterEntries.id })
+            .select({ id: rosterEntries.id, claimedUserId: rosterEntries.claimedUserId })
             .from(rosterEntries)
             .where(
                 and(
@@ -163,7 +163,16 @@ async function claimRosterEntry(
             )
             .limit(1);
 
-        if (typeof existing !== 'undefined') return { status: 'entry-claimed' };
+        if (typeof existing !== 'undefined') {
+            // The user's own concurrent request may have claimed this entry
+            // between our conditional UPDATE and this lookup; treat that as
+            // success rather than a conflict.
+            if (existing.claimedUserId === args.userId) {
+                span.setAttribute('submission.roster_entry_id', existing.id);
+                return { rosterEntryId: existing.id };
+            }
+            return { status: 'entry-claimed' };
+        }
 
         logger.debug('roster entry not found for the given name', {
             'program.id': args.programId,
