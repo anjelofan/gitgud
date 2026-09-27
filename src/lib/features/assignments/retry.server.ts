@@ -30,7 +30,7 @@ export async function withRetries<T>(fn: () => Promise<T>, options: RetryOptions
     const { attempts, baseDelayMs, delay = sleep, onRetry } = options;
 
     let attempt = 1;
-    while (true) 
+    while (true)
         try {
             return await fn();
         } catch (error) {
@@ -42,5 +42,4 @@ export async function withRetries<T>(fn: () => Promise<T>, options: RetryOptions
             await delay(baseDelayMs * 2 ** (attempt - 1));
             attempt += 1;
         }
-    
 }

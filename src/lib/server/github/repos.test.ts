@@ -3,8 +3,25 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { fakeGithub } from '$tests/fake-github/client';
 
-import { addCollaborator, createBranch, createCommit, createPullRequest, createRepoFromTemplate, getBranchHead, getCommit, listOpenPullRequests, listOrgRepos, updateBranch } from './repos';
-import { CollaboratorResponseSchema, GeneratedRepoSchema, GitRefSchema, OrgReposSchema, PullRequestSchema } from './contracts';
+import {
+    addCollaborator,
+    createBranch,
+    createCommit,
+    createPullRequest,
+    createRepoFromTemplate,
+    getBranchHead,
+    getCommit,
+    listOpenPullRequests,
+    listOrgRepos,
+    updateBranch,
+} from './repos';
+import {
+    CollaboratorResponseSchema,
+    GeneratedRepoSchema,
+    GitRefSchema,
+    OrgReposSchema,
+    PullRequestSchema,
+} from './contracts';
 
 const TOKEN = 'repos-access-token';
 const TEMPLATE_TOKEN = 'template-access-token';
@@ -219,7 +236,10 @@ describe('createPullRequest', () => {
                 title: 'Feedback',
                 body: 'Feedback goes here.',
             }),
-        ).toEqual({ number: 1, html_url: 'https://github.com/accept-org/fibonacci-octocat/pull/1' });
+        ).toEqual({
+            number: 1,
+            html_url: 'https://github.com/accept-org/fibonacci-octocat/pull/1',
+        });
     });
 
     it('throws when a matching pull request already exists (422)', async () => {
@@ -253,7 +273,9 @@ describe('createPullRequest', () => {
                 'main',
                 'feedback',
             ),
-        ).toEqual([{ number: 1, html_url: 'https://github.com/accept-org/fibonacci-octocat/pull/1' }]);
+        ).toEqual([
+            { number: 1, html_url: 'https://github.com/accept-org/fibonacci-octocat/pull/1' },
+        ]);
     });
 });
 

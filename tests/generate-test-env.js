@@ -11,13 +11,11 @@ function missing(name) {
     return !current.split('\n').some((line) => line.startsWith(`${name}=`));
 }
 
-if (missing('GITHUB_APP_CLIENT_SECRET')) 
+if (missing('GITHUB_APP_CLIENT_SECRET'))
     generated.push(`GITHUB_APP_CLIENT_SECRET=${randomBytes(32).toString('base64url')}`);
 
-
-if (missing('SESSION_SECRET')) 
+if (missing('SESSION_SECRET'))
     generated.push(`SESSION_SECRET=${randomBytes(32).toString('base64url')}`);
-
 
 if (missing('GITHUB_APP_PRIVATE_KEY')) {
     const { privateKey } = generateKeyPairSync('rsa', {
@@ -31,4 +29,6 @@ if (missing('GITHUB_APP_PRIVATE_KEY')) {
 if (generated.length > 0) {
     appendFileSync(path, `${generated.join('\n')}\n`);
     process.stdout.write(`Generated ${generated.length.toString()} test values in ${path}.\n`);
-} else {process.stdout.write(`${path} already contains all generated test values.\n`);}
+} else {
+    process.stdout.write(`${path} already contains all generated test values.\n`);
+}

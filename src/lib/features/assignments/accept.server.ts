@@ -288,9 +288,13 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             switch (error.status) {
                 case 404:
                 case 409:
-                    logger.fatal('repository did not materialize before the retries ran out', error, {
-                        'github.repo': repoName,
-                    });
+                    logger.fatal(
+                        'repository did not materialize before the retries ran out',
+                        error,
+                        {
+                            'github.repo': repoName,
+                        },
+                    );
                     return { status: 'repo-not-ready' };
                 default:
                     logger.error('github branch head read failed', error, {

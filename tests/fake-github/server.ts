@@ -278,15 +278,7 @@ export class FakeGithub {
         });
     }
 
-    registerPullRequest({
-        token,
-        owner,
-        repo,
-    }: {
-        token: string;
-        owner: string;
-        repo: string;
-    }) {
+    registerPullRequest({ token, owner, repo }: { token: string; owner: string; repo: string }) {
         this.#pullRequests.set(`${token}\n${owner}\n${repo}`, {
             status: 201,
             body: { number: 1, html_url: `https://github.com/${owner}/${repo}/pull/1` },
@@ -482,7 +474,9 @@ export class FakeGithub {
                 body,
             );
 
-        const pullRequest = url.pathname.match(/^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pulls$/u);
+        const pullRequest = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pulls$/u,
+        );
         if (pullRequest !== null && request.method === 'GET')
             return this.#listPullRequests(
                 token,
@@ -500,10 +494,7 @@ export class FakeGithub {
 
         const installation = url.pathname.match(/^\/orgs\/(?<org>[^/]+)\/installation$/u);
         if (installation !== null && request.method === 'GET')
-            return this.#installation(
-                decodeURIComponent(installation.groups?.org ?? ''),
-                response,
-            );
+            return this.#installation(decodeURIComponent(installation.groups?.org ?? ''), response);
 
         const installationToken = url.pathname.match(
             /^\/app\/installations\/(?<id>\d+)\/access_tokens$/u,
@@ -750,12 +741,7 @@ export class FakeGithub {
         respond(response, fixture.status, fixture.body);
     }
 
-    #pullRequest(
-        token: string | null,
-        owner: string,
-        repo: string,
-        response: ServerResponse,
-    ) {
+    #pullRequest(token: string | null, owner: string, repo: string, response: ServerResponse) {
         const fixture = this.#pullRequests.get(`${token}\n${owner}\n${repo}`);
         if (typeof fixture === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });
@@ -764,12 +750,7 @@ export class FakeGithub {
         respond(response, fixture.status, fixture.body);
     }
 
-    #listPullRequests(
-        token: string | null,
-        owner: string,
-        repo: string,
-        response: ServerResponse,
-    ) {
+    #listPullRequests(token: string | null, owner: string, repo: string, response: ServerResponse) {
         const created = this.#createdPullRequests.get(`${token}\n${owner}\n${repo}`);
         respond(response, 200, typeof created === 'undefined' ? [] : [created]);
     }
@@ -794,12 +775,17 @@ export class FakeGithub {
         response: ServerResponse,
         body: FixtureBody,
     ) {
-        const parent = Array.isArray(body.parents) && typeof body.parents[0] === 'string'
-            ? body.parents[0]
-            : 'unknown-parent';
+        const parent =
+            Array.isArray(body.parents) && typeof body.parents[0] === 'string'
+                ? body.parents[0]
+                : 'unknown-parent';
         const sha = `${parent}-feedback-setup`;
         const tree = typeof body.tree === 'string' ? body.tree : `tree-${parent}`;
-        const commit = { sha, message: typeof body.message === 'string' ? body.message : '', tree: { sha: tree } };
+        const commit = {
+            sha,
+            message: typeof body.message === 'string' ? body.message : '',
+            tree: { sha: tree },
+        };
         this.#commits.set(`${token}\n${owner}\n${repo}\n${sha}`, { status: 201, body: commit });
         respond(response, 201, commit);
     }

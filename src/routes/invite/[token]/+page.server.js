@@ -185,8 +185,7 @@ export const actions = {
                         'assignment.id': result.assignment.id,
                     });
                     return fail(502, {
-                        message:
-                            'GitHub could not complete the assignment. Try again in a moment.',
+                        message: 'GitHub could not complete the assignment. Try again in a moment.',
                         issues: [],
                     });
                 case 'app-not-installed':
@@ -200,10 +199,14 @@ export const actions = {
                         issues: [],
                     });
                 case 'repo-not-ready':
-                    logger.fatal('repository did not materialize before the retries ran out', void 0, {
-                        'user.id': session.user.id,
-                        'assignment.id': result.assignment.id,
-                    });
+                    logger.fatal(
+                        'repository did not materialize before the retries ran out',
+                        void 0,
+                        {
+                            'user.id': session.user.id,
+                            'assignment.id': result.assignment.id,
+                        },
+                    );
                     return fail(503, {
                         message:
                             'GitHub is still setting up your assignment repository. Refresh the page and try again in a few seconds.',

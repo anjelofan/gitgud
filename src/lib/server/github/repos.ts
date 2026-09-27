@@ -112,11 +112,15 @@ export function createPullRequest(
     repo: string,
     { head, base, title, body }: { head: string; base: string; title: string; body: string },
 ) {
-    return githubApi(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls`, PullRequestSchema, {
-        method: 'POST',
-        token,
-        body: { title, head, base, body },
-    });
+    return githubApi(
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls`,
+        PullRequestSchema,
+        {
+            method: 'POST',
+            token,
+            body: { title, head, base, body },
+        },
+    );
 }
 
 /** Lists open pull requests matching head and base branches. */
