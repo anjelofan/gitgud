@@ -33,32 +33,35 @@ const BRANCH_READ_BASE_DELAY_MS = 250;
 const FEEDBACK_SETUP_COMMIT_MESSAGE = 'Setting up GitGud Feedback';
 
 /**
- * The feedback pull request heads `main` and bases `feedback`: the head branch
- * tracks `main`, so every student push appears in the PR automatically — the
- * "echo" behavior. Authored by the app via the installation token. Copy
- * adapted from GitHub Classroom's feedback pull request.
+ * Builds the feedback pull request: it heads the template's default branch and
+ * bases `feedback`, so the head branch tracks the default branch and every
+ * student push appears in the PR automatically — the "echo" behavior. Authored
+ * by the app via the installation token. Copy adapted from GitHub Classroom's
+ * feedback pull request.
  */
-const FEEDBACK_PULL_REQUEST = {
-    title: 'Feedback',
-    head: 'main',
-    base: 'feedback',
-    body: [
-        ':wave:! GitGud created this pull request as a place for your teacher to leave feedback on your work. It will update automatically. **Don’t close or merge this pull request**, unless you’re instructed to do so by your teacher.',
-        'In this pull request, your teacher can leave comments and feedback on your code. Click the **Subscribe** button to be notified if that happens.',
-        'Click the **Files changed** or **Commits** tab to see all of the changes pushed to the default branch since the assignment started. Your teacher can see this too.',
-        '<details>',
-        '<summary>',
-        '<strong>Notes for teachers</strong>',
-        '</summary>',
-        '',
-        'Use this PR to leave feedback. Here are some tips:',
-        '- Click the **Files changed** tab to see all of the changes pushed to the default branch since the assignment started. To leave comments on specific lines of code, put your cursor over a line of code and click the blue **+** (plus sign). To learn more about comments, read “[Commenting on a pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/commenting-on-a-pull-request)”.',
-        '- Click the **Commits** tab to see the commits pushed to the default branch. Click a commit to see specific changes.',
-        '- If autograding is enabled, then click the **Checks** tab to see the results.',
-        '- This page is an overview. It shows commits, line comments, and general comments. You can leave a general comment below.',
-        '</details>',
-    ].join('\n'),
-} as const;
+function feedbackPullRequestFor(defaultBranch: string) {
+    return {
+        title: 'Feedback',
+        head: defaultBranch,
+        base: 'feedback',
+        body: [
+            ':wave:! GitGud created this pull request as a place for your teacher to leave feedback on your work. It will update automatically. **Don’t close or merge this pull request**, unless you’re instructed to do so by your teacher.',
+            'In this pull request, your teacher can leave comments and feedback on your code. Click the **Subscribe** button to be notified if that happens.',
+            'Click the **Files changed** or **Commits** tab to see all of the changes pushed to the default branch since the assignment started. Your teacher can see this too.',
+            '<details>',
+            '<summary>',
+            '<strong>Notes for teachers</strong>',
+            '</summary>',
+            '',
+            'Use this PR to leave feedback. Here are some tips:',
+            '- Click the **Files changed** tab to see all of the changes pushed to the default branch since the assignment started. To leave comments on specific lines of code, put your cursor over a line of code and click the blue **+** (plus sign). To learn more about comments, read “[Commenting on a pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/commenting-on-a-pull-request)”.',
+            '- Click the **Commits** tab to see the commits pushed to the default branch. Click a commit to see specific changes.',
+            '- If autograding is enabled, then click the **Checks** tab to see the results.',
+            '- This page is an overview. It shows commits, line comments, and general comments. You can leave a general comment below.',
+            '</details>',
+        ].join('\n'),
+    };
+}
 
 export interface AcceptAssignmentArgs {
     assignmentId: string;
@@ -377,7 +380,12 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             }
 
             try {
-                await createPullRequest(instructorToken, args.org, repoName, FEEDBACK_PULL_REQUEST);
+                await createPullRequest(
+                    instructorToken,
+                    args.org,
+                    repoName,
+                    feedbackPullRequestFor(defaultBranch),
+                );
             } catch (error) {
                 if (!(error instanceof GithubApiError)) throw error;
                 if (error.status === 422) {
