@@ -78,7 +78,7 @@ export const actions = {
             }
 
             const { org } = parsed.output;
-            const role = await resolveRole(session.githubToken, org);
+            const role = await resolveRole(db, session.githubToken, session.user.id, org);
             if (role?.kind !== 'instructor') {
                 logger.fatal('creator is not an owner of the GitHub organization', void 0, {
                     'user.id': session.user.id,
