@@ -11,6 +11,8 @@ docs
 node_modules
 playwright-results
 scratchpad
+scripts
+secrets
 src/**/*.test.*
 src/**/*.spec.*
 tests
