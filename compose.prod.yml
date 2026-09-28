@@ -1,0 +1,103 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/gitgud_db_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/gitgud_db_password
+      POSTGRES_DB_FILE: /run/secrets/gitgud_db_name
+    networks:
+      - gitgud-database
+    secrets:
+      - gitgud_db_user
+      - gitgud_db_password
+      - gitgud_db_name
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 30s
+      timeout: 2s
+      retries: 3
+      start_period: 15s
+      start_interval: 1s
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: '512M'
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        monitor: 5s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        window: 120s
+
+  gitgud:
+    image: ghcr.io/up-csi/gitgud:1.0.0
+    environment:
+      ORIGIN: https://gitgud.up-csi.org
+      FILE_INJECTED_SECRETS: 'DATABASE_URL,GITHUB_APP_CLIENT_ID,GITHUB_APP_CLIENT_SECRET,GITHUB_APP_PRIVATE_KEY,SESSION_SECRET'
+      DATABASE_URL_FILE: /run/secrets/gitgud_db_url
+      GITHUB_APP_CLIENT_ID_FILE: /run/secrets/gitgud_github_app_client_id
+      GITHUB_APP_CLIENT_SECRET_FILE: /run/secrets/gitgud_github_app_client_secret
+      GITHUB_APP_PRIVATE_KEY_FILE: /run/secrets/gitgud_github_app_private_key
+      SESSION_SECRET_FILE: /run/secrets/gitgud_session_secret
+    ports:
+      - '3000:3000'
+    networks:
+      - gitgud-database
+    secrets:
+      - gitgud_db_url
+      - gitgud_github_app_client_id
+      - gitgud_github_app_client_secret
+      - gitgud_github_app_private_key
+      - gitgud_session_secret
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        monitor: 5s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        window: 120s
+
+networks:
+  gitgud-database:
+    external: false
+    driver: overlay
+    name: 'gitgud-database'
+    internal: false
+
+secrets:
+  gitgud_db_user:
+    external: true
+  gitgud_db_password:
+    external: true
+  gitgud_db_name:
+    external: true
+  gitgud_db_url:
+    external: true
+  gitgud_github_app_client_id:
+    external: true
+  gitgud_github_app_client_secret:
+    external: true
+  gitgud_github_app_private_key:
+    external: true
+  gitgud_session_secret:
+    external: true
