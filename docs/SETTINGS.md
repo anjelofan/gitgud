@@ -2,7 +2,10 @@
 
 The GitHub App (Settings → Developer settings → GitHub Apps) must satisfy all of the following for sign-in and assignment acceptance to work:
 
-- **Callback URL** lists `<scheme>://<host>:<port>/auth/callback` for every port the app runs on (`http://localhost:5173/auth/callback` for `pnpm dev`, `http://localhost:4173/auth/callback` for `pnpm preview`). A mismatched `redirect_uri` makes GitHub 404 the authorize page.
+- **Callback URL** lists the browser-facing `<scheme>://<host>[:<port>]/auth/callback` for every deployment (`http://localhost:5173/auth/callback` for `pnpm dev`, `http://localhost:4173/auth/callback` for `pnpm preview`). A mismatched `redirect_uri` makes GitHub 404 the authorize page.
+
+    The deployed stack pins the origin with `ORIGIN` in [`compose.prod.yml`](../compose.prod.yml); adapter-node cannot infer the public scheme on its own (it falls back to `https` while the proxy hop is plain `http`), so `ORIGIN` must always be the URL the browser uses — never the container address (`gitgud:3000`). Changing the public URL means updating `ORIGIN`, this callback URL, and the GitHub App registration together; with a fixed `ORIGIN`, sign-in only works from that exact origin.
+
 - **"Request user authorization (OAuth flow) during installation"** is enabled, and the app is **made public** (Advanced → "Make this GitHub App public") — students authorize from outside the org; a private app only works for org members.
 - The app has an **active installation** on the program's org — assignment repo provisioning authenticates as the installation, not a user.
 - The installation's repository permissions include

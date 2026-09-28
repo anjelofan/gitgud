@@ -36,3 +36,4 @@ vitest-results
 playwright-results
 
 scratchpad/
+secrets/

@@ -11,9 +11,6 @@ jobs:
   check_stability:
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/test
-      FAKE_GITHUB_PORT: 4001
     services:
       postgres:
         image: postgres:17-alpine
@@ -27,7 +24,7 @@ jobs:
           --health-timeout 2s
           --health-retries 3
         ports:
-          - 5432:5432
+          - 5433:5432
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -41,6 +38,8 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install Dependencies
         run: pnpm install
+      - name: Apply Test Database Migrations
+        run: pnpm db:test:migrate
       - name: Check Formatting
         run: pnpm fmt
       - name: Run Linters
@@ -49,6 +48,8 @@ jobs:
         run: pnpm build
       - name: Set-up E2E environment
         run: pnpm test:e2e:setup
+      - name: Generate Test Secrets
+        run: pnpm test:secrets
       - name: Test Codebase
         run: pnpm test
       - name: Upload Test Results
