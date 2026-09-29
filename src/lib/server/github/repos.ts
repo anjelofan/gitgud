@@ -3,16 +3,19 @@ import {
     GeneratedRepoSchema,
     GitCommitSchema,
     GitRefSchema,
-    OrgReposSchema,
+    OrgRepoSchema,
     PullRequestSchema,
     PullRequestsSchema,
 } from './contracts';
 import { githubApi } from './client';
 
-export function listOrgRepos(token: string, org: string) {
-    return githubApi(`/orgs/${encodeURIComponent(org)}/repos?per_page=100`, OrgReposSchema, {
-        token,
-    });
+/** Reads a single repository; a 404 means the org does not expose it under this token. */
+export function getOrgRepo(token: string, org: string, repo: string) {
+    return githubApi(
+        `/repos/${encodeURIComponent(org)}/${encodeURIComponent(repo)}`,
+        OrgRepoSchema,
+        { token },
+    );
 }
 
 /**
