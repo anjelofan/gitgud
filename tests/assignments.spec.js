@@ -8,10 +8,7 @@ const DEFAULT_FAKE_TOKEN = 'fake-default-access-token';
 
 // Seeded once at module load; the fake GitHub server is already up
 // (playwright webServer) and every OAuth session carries DEFAULT_FAKE_TOKEN.
-const ORG_FIXTURES = [
-    ['e2e-assign-org', ['dtp2627a-0']],
-    ['e2e-assign-empty-org', []],
-];
+const ORG_FIXTURES = [['e2e-assign-org', ['dtp2627a-0']]];
 
 for (const [org, repos] of ORG_FIXTURES) {
     await fakeGithub('registerMembership', {
@@ -20,7 +17,8 @@ for (const [org, repos] of ORG_FIXTURES) {
         state: 'active',
         role: 'admin',
     });
-    await fakeGithub('registerRepos', { token: DEFAULT_FAKE_TOKEN, org, repos });
+    for (const repo of repos)
+        await fakeGithub('registerRepo', { token: DEFAULT_FAKE_TOKEN, org, repo });
 }
 
 /** Creates a program each test
@@ -60,13 +58,15 @@ function utcDeadlineParts() {
 /** Fills the create-assignment form with a deadline one day ahead in UTC wall clock.
  * @param {import('@playwright/test').Page} page
  * @param {string} name
+ * @param {string} [templateRepo]
  * @returns {Promise<void>}
  */
-async function fillAssignmentForm(page, name) {
+async function fillAssignmentForm(page, name, templateRepo = 'dtp2627a-0') {
     const { fillValue } = utcDeadlineParts();
 
     await page.getByRole('textbox', { name: 'Assignment Name' }).fill(name);
     await page.getByRole('textbox', { name: 'Deadline' }).fill(fillValue);
+    await page.getByRole('textbox', { name: 'Repository Template' }).fill(templateRepo);
     await page.getByRole('button', { name: 'Create Assignment' }).click();
 }
 
@@ -149,20 +149,6 @@ test.describe('assignment creation journey', () => {
         );
     });
 
-    test('rejects a submission without a template repository', async ({ page }) => {
-        await createProgram(page, { name: 'no template program', org: 'e2e-assign-empty-org' });
-
-        const { fillValue } = utcDeadlineParts();
-        await page.getByRole('textbox', { name: 'Assignment Name' }).fill('No Template Assignment');
-        await page.getByRole('textbox', { name: 'Deadline' }).fill(fillValue);
-        await page.getByRole('button', { name: 'Create Assignment' }).click();
-
-        await expect(page.getByText('Check the highlighted fields.')).toBeVisible();
-        await expect(
-            page.getByText('templateRepo: Repository template is required.'),
-        ).toBeVisible();
-    });
-
     test('rejects a foreign instructor viewing another instructor’s assignment', async ({
         page,
     }) => {
@@ -190,12 +176,33 @@ test.describe('assignment creation journey', () => {
         expect(response?.status()).toBe(404);
     });
 
-    test('shows no template options when the organization has no repositories', async ({
-        page,
-    }) => {
-        const programName = 'Empty Repos';
-        await createProgram(page, { name: programName, org: 'e2e-assign-empty-org' });
+    test('requires a template repository before submitting', async ({ page }) => {
+        await createProgram(page, { name: 'no template program', org: 'e2e-assign-org' });
 
-        await expect(page.getByText('No available repositories in organization')).toBeVisible();
+        const { fillValue } = utcDeadlineParts();
+        await page.getByRole('textbox', { name: 'Assignment Name' }).fill('No Template Assignment');
+        await page.getByRole('textbox', { name: 'Deadline' }).fill(fillValue);
+        await page.getByRole('button', { name: 'Create Assignment' }).click();
+
+        const templateInput = page.getByRole('textbox', { name: 'Repository Template' });
+        expect(
+            await templateInput.evaluate((element) =>
+                /** @type {HTMLInputElement} */ (element).checkValidity(),
+            ),
+        ).toBe(false);
+        await expect(page).toHaveURL(/\/programs\/[0-9a-f-]{36}$/u);
+    });
+
+    test('rejects a template repository that is not in the organization', async ({ page }) => {
+        await createProgram(page, { name: 'foreign template program', org: 'e2e-assign-org' });
+
+        await fillAssignmentForm(page, 'Foreign Template Assignment', 'foreign-repo');
+
+        await expect(page.getByText('Check the highlighted fields.')).toBeVisible();
+        await expect(
+            page.getByText(
+                'templateRepo: Repository template must be a repository in the program organization.',
+            ),
+        ).toBeVisible();
     });
 });

@@ -25,7 +25,6 @@
             program: Pick<Program, 'name' | 'org'>;
             students: Pick<RosterEntry, 'id' | 'name'>[];
             assignments: Pick<Assignment, 'id' | 'name'>[];
-            repositories: string[];
         };
         form:
             | ({
@@ -44,7 +43,7 @@
     }
 
     let { data, form }: Props = $props();
-    let { program, students, assignments, repositories } = $derived(data);
+    let { program, students, assignments } = $derived(data);
 
     let assignmentForm = $derived(
         form !== null && form.scope === 'assignment' && 'issues' in form ? form : null,
@@ -110,21 +109,13 @@
         <div>
             <label>
                 <p>Repository Template</p>
-                {#if repositories.length === 0}
-                    <p>No available repositories in organization</p>
-                {:else}
-                    <select
-                        name="templateRepo"
-                        required
-                        value={assignmentForm === null
-                            ? repositories[0]
-                            : assignmentForm.data.templateRepo}
-                    >
-                        {#each repositories as r (r)}
-                            <option value={r}> {r} </option>
-                        {/each}
-                    </select>
-                {/if}
+                <input
+                    type="text"
+                    name="templateRepo"
+                    maxlength="100"
+                    required
+                    value={assignmentForm === null ? '' : assignmentForm.data.templateRepo}
+                />
             </label>
         </div>
         <button type="submit">Create Assignment</button>

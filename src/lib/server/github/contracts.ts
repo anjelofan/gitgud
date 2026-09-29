@@ -17,8 +17,9 @@ export const OAuthTokenResponseSchema = v.object({
 });
 export type OAuthTokenResponse = v.InferOutput<typeof OAuthTokenResponseSchema>;
 
-export const OrgReposSchema = v.array(v.object({ name: v.string() }));
-export type OrgRepos = v.InferOutput<typeof OrgReposSchema>;
+/** Single repository lookup; only the name is needed to confirm it exists in the org. */
+export const OrgRepoSchema = v.object({ name: v.string() });
+export type OrgRepo = v.InferOutput<typeof OrgRepoSchema>;
 
 /** Repository created from a template; `default_branch` drives feedback-branch creation. */
 export const GeneratedRepoSchema = v.object({

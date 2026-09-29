@@ -1,3 +1,6 @@
+import { getOrgRepo } from '$lib/server/github/repos';
+import { GithubApiError } from '$lib/server/github/client';
+
 /** Decodes a single text form field; non-string values decode to the empty string. */
 function stringField(formData: FormData, key: string) {
     const value = formData.get(key);
@@ -16,10 +19,25 @@ export function decodeCreateAssignmentForm(formData: FormData) {
     };
 }
 
+export type TemplateRepoStatus = 'known' | 'missing' | 'unavailable';
+
 /**
- * Verifies the submitted template repository against the organization's repo
- * list; the form `<select>` alone does not enforce the org-membership invariant.
+ * Confirms the submitted template repository exists in the organization by
+ * reading it directly; the free-text form field does not enforce org membership.
+ * A 404 means the org does not expose the repo to this token; any other failure
+ * is transient and reported as `unavailable` so the caller can ask for a retry.
  */
-export function isKnownOrgRepo(repositories: string[], submitted: string) {
-    return repositories.includes(submitted);
+export async function templateRepoStatus(
+    token: string | null,
+    org: string,
+    repo: string,
+): Promise<TemplateRepoStatus> {
+    if (token === null) return 'unavailable';
+    try {
+        await getOrgRepo(token, org, repo);
+        return 'known';
+    } catch (error) {
+        if (error instanceof GithubApiError && error.status === 404) return 'missing';
+        return 'unavailable';
+    }
 }

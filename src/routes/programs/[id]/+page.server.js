@@ -28,9 +28,8 @@ import {
 } from '$lib/features/programs/form.server';
 import {
     decodeCreateAssignmentForm,
-    isKnownOrgRepo,
+    templateRepoStatus,
 } from '$lib/features/assignments/form.server.js';
-import { listOrgRepos } from '$lib/server/github/repos.js';
 import { Logger } from '$lib/server/telemetry/logger';
 import { parseRoster } from '$lib/features/programs/roster';
 import { resolve } from '$app/paths';
@@ -133,24 +132,12 @@ export async function load({ locals: { session }, params }) {
 
         const { name, org } = result.program;
 
-        const repositories = await (async () => {
-            if (session.githubToken === null) return [];
-            try {
-                return (await listOrgRepos(session.githubToken, org)).map((repo) => repo.name);
-            } catch {
-                logger.warn('organization repositories not listed', {
-                    'program.id': programId.output,
-                });
-                return [];
-            }
-        })();
         const assignments = await listAssignmentsForProgram(db, programId.output);
 
         return {
             program: { name, org },
             students: result.students.map(({ id, name }) => ({ id, name })),
             assignments,
-            repositories,
         };
     });
 }
@@ -208,12 +195,7 @@ export const actions = {
             }
 
             const { org } = owned.program;
-            const [role, orgRepos] = await Promise.all([
-                resolveRole(db, session.githubToken, session.user.id, org),
-                session.githubToken === null
-                    ? Promise.resolve(null)
-                    : listOrgRepos(session.githubToken, org).catch(() => null),
-            ]);
+            const role = await resolveRole(db, session.githubToken, session.user.id, org);
             if (role?.kind !== 'instructor') {
                 logger.fatal('creator is not an owner of the GitHub organization', void 0, {
                     'user.id': session.user.id,
@@ -226,25 +208,26 @@ export const actions = {
                 });
             }
 
-            if (orgRepos === null) {
-                logger.fatal('organization repositories not listed for validation', void 0, {
+            const repoStatus = await templateRepoStatus(
+                session.githubToken,
+                org,
+                parsed.output.templateRepo,
+            );
+
+            if (repoStatus === 'unavailable') {
+                logger.fatal('template repository lookup failed', void 0, {
                     'user.id': session.user.id,
                     'github.org': org,
                 });
                 return assignmentFail(502, {
                     message:
-                        'Template repositories could not be listed from GitHub. Try again later.',
+                        'Template repositories could not be reached on GitHub. Try again later.',
                     issues: [],
                     data: EMPTY_ASSIGNMENT_DATA,
                 });
             }
 
-            if (
-                !isKnownOrgRepo(
-                    orgRepos.map((repo) => repo.name),
-                    parsed.output.templateRepo,
-                )
-            ) {
+            if (repoStatus === 'missing') {
                 logger.fatal('submitted template repository is not in the organization', void 0, {
                     'user.id': session.user.id,
                     'github.org': org,

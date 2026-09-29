@@ -27,7 +27,7 @@ await fakeGithub('registerMembership', {
     state: 'active',
     role: 'admin',
 });
-await fakeGithub('registerRepos', { token: DEFAULT_FAKE_TOKEN, org: ORG, repos: [TEMPLATE] });
+await fakeGithub('registerRepo', { token: DEFAULT_FAKE_TOKEN, org: ORG, repo: TEMPLATE });
 await fakeGithub('registerTemplate', {
     token: INSTALLATION_TOKEN,
     org: ORG,
@@ -97,6 +97,7 @@ test.describe('assignment invitation journey', () => {
 
         await page.getByRole('textbox', { name: 'Assignment Name' }).fill(ASSIGNMENT_NAME);
         await page.getByRole('textbox', { name: 'Deadline' }).fill(utcDeadlineFillValue());
+        await page.getByRole('textbox', { name: 'Repository Template' }).fill(TEMPLATE);
         await page.getByRole('button', { name: 'Create Assignment' }).click();
         await expect(page).toHaveURL(/\/assignments\/[0-9a-f-]{36}$/u);
 
