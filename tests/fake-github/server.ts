@@ -40,7 +40,7 @@ function bearerToken(request: IncomingMessage) {
 /**
  * In-memory fake of the GitHub surface this app uses: the OAuth web
  * application flow, `GET /user`, organization memberships, repository
- * listing, template-generated repository creation, git refs, and
+ * lookup, template-generated repository creation, git refs, and
  * collaborator invitations. Tests never reach the real GitHub API; this
  * server is the boundary instead.
  */
@@ -92,17 +92,27 @@ export class FakeGithub {
         });
     }
 
-    registerRepos({ token, org, repos }: { token: string; org: string; repos: string[] }) {
-        this.#repos.set(`${token}\n${org}`, {
+    registerRepo({ token, org, repo }: { token: string; org: string; repo: string }) {
+        this.#repos.set(`${token}\n${org}\n${repo}`, {
             status: 200,
-            body: repos.map((name) => ({ name })),
+            body: { name: repo },
         });
     }
 
-    registerReposError({ token, org, status }: { token: string; org: string; status: number }) {
-        this.#repos.set(`${token}\n${org}`, {
+    registerRepoError({
+        token,
+        org,
+        repo,
+        status,
+    }: {
+        token: string;
+        org: string;
+        repo: string;
+        status: number;
+    }) {
+        this.#repos.set(`${token}\n${org}\n${repo}`, {
             status,
-            body: { message: 'fake repo listing failure', status: String(status) },
+            body: { message: 'fake repository lookup failure', status: String(status) },
         });
     }
 
@@ -413,6 +423,15 @@ export class FakeGithub {
         if (url.pathname.startsWith('/user/memberships/orgs/') && request.method === 'GET')
             return this.#membership(token, url.pathname, response);
 
+        const orgRepo = url.pathname.match(/^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)$/u);
+        if (orgRepo !== null && request.method === 'GET')
+            return this.#orgRepo(
+                token,
+                decodeURIComponent(orgRepo.groups?.owner ?? ''),
+                decodeURIComponent(orgRepo.groups?.repo ?? ''),
+                response,
+            );
+
         const generated = url.pathname.match(
             /^\/repos\/(?<owner>[^/]+)\/(?<template>[^/]+)\/generate$/u,
         );
@@ -530,9 +549,6 @@ export class FakeGithub {
         if (installationToken !== null && request.method === 'POST')
             return this.#installationToken(installationToken.groups?.id ?? '', response);
 
-        if (url.pathname.startsWith('/orgs/') && request.method === 'GET')
-            return this.#orgRepos(token, url.pathname, response);
-
         respond(response, 404, { message: 'Not Found' });
     }
 
@@ -553,10 +569,12 @@ export class FakeGithub {
             issueRefreshToken: (args) =>
                 this.issueRefreshToken(args as { token: string; value?: string }),
             reset: () => this.reset(),
-            registerRepos: (args) =>
-                this.registerRepos(args as { token: string; org: string; repos: string[] }),
-            registerReposError: (args) =>
-                this.registerReposError(args as { token: string; org: string; status: number }),
+            registerRepo: (args) =>
+                this.registerRepo(args as { token: string; org: string; repo: string }),
+            registerRepoError: (args) =>
+                this.registerRepoError(
+                    args as { token: string; org: string; repo: string; status: number },
+                ),
             registerTemplate: (args) =>
                 this.registerTemplate(
                     args as {
@@ -711,14 +729,11 @@ export class FakeGithub {
         respond(response, membership.status, membership.body);
     }
 
-    #orgRepos(token: string | null, pathname: string, response: ServerResponse) {
-        const org = decodeURIComponent(
-            pathname.replace(/^\/orgs\/(?<org>[^/]+)\/repos$/u, '$<org>'),
-        );
-        const repos = this.#repos.get(`${token}\n${org}`);
-        if (typeof repos === 'undefined')
+    #orgRepo(token: string | null, owner: string, repo: string, response: ServerResponse) {
+        const fixture = this.#repos.get(`${token}\n${owner}\n${repo}`);
+        if (typeof fixture === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });
-        respond(response, repos.status, repos.body);
+        respond(response, fixture.status, fixture.body);
     }
 
     #generate(
