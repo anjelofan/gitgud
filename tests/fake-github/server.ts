@@ -63,6 +63,7 @@ export class FakeGithub {
     #createdPullRequests = new Map<string, unknown>();
     #checkRunsBySuite = new Map<string, { status: number; body: unknown }>();
     #annotationsByCheckRun = new Map<string, { status: number; body: unknown }>();
+    #workflowRunsByRepo = new Map<string, { status: number; body: unknown }>();
     #nextAuthorizeToken: string | null = null;
     defaultToken = 'fake-default-access-token';
 
@@ -412,6 +413,40 @@ export class FakeGithub {
         });
     }
 
+    registerWorkflowRuns({
+        token,
+        owner,
+        repo,
+        runs,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        runs: unknown[];
+    }) {
+        this.#workflowRunsByRepo.set(`${token}\n${owner}\n${repo}`, {
+            status: 200,
+            body: { total_count: runs.length, workflow_runs: runs },
+        });
+    }
+
+    registerWorkflowRunsError({
+        token,
+        owner,
+        repo,
+        status,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        status: number;
+    }) {
+        this.#workflowRunsByRepo.set(`${token}\n${owner}\n${repo}`, {
+            status,
+            body: { message: 'fake workflow runs failure', status: String(status) },
+        });
+    }
+
     /** Makes the next OAuth authorize round-trip sign in as the given token's user (one-shot). */
     authorizeAs({ token }: { token: string }) {
         this.#nextAuthorizeToken = token;
@@ -448,6 +483,7 @@ export class FakeGithub {
         this.#createdPullRequests.clear();
         this.#checkRunsBySuite.clear();
         this.#annotationsByCheckRun.clear();
+        this.#workflowRunsByRepo.clear();
         this.#nextAuthorizeToken = null;
     }
 
@@ -653,6 +689,18 @@ export class FakeGithub {
                 response,
             );
 
+        const workflowRuns = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/actions\/runs$/u,
+        );
+        if (workflowRuns !== null && request.method === 'GET')
+            return this.#workflowRuns(
+                token,
+                decodeURIComponent(workflowRuns.groups?.owner ?? ''),
+                decodeURIComponent(workflowRuns.groups?.repo ?? ''),
+                url.searchParams.get('status'),
+                response,
+            );
+
         respond(response, 404, { message: 'Not Found' });
     }
 
@@ -810,6 +858,14 @@ export class FakeGithub {
                         checkRunId: number;
                         status: number;
                     },
+                ),
+            registerWorkflowRuns: (args) =>
+                this.registerWorkflowRuns(
+                    args as { token: string; owner: string; repo: string; runs: unknown[] },
+                ),
+            registerWorkflowRunsError: (args) =>
+                this.registerWorkflowRunsError(
+                    args as { token: string; owner: string; repo: string; status: number },
                 ),
         };
         if (typeof op !== 'string') return respond(response, 400, { message: 'Missing fake op.' });
@@ -1072,6 +1128,24 @@ export class FakeGithub {
         const fixture = this.#annotationsByCheckRun.get(
             `${token}\n${owner}\n${repo}\n${checkRunId}`,
         );
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #workflowRuns(
+        token: string | null,
+        owner: string,
+        repo: string,
+        statusFilter: string | null,
+        response: ServerResponse,
+    ) {
+        if (statusFilter !== 'completed')
+            return respond(response, 400, {
+                message: 'fake workflow runs: status mismatch',
+                status: '400',
+            });
+        const fixture = this.#workflowRunsByRepo.get(`${token}\n${owner}\n${repo}`);
         if (typeof fixture === 'undefined')
             return respond(response, 404, { message: 'Not Found', status: '404' });
         respond(response, fixture.status, fixture.body);

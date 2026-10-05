@@ -78,3 +78,15 @@ export const CheckRunAnnotationSchema = v.object({
 export type CheckRunAnnotation = v.InferOutput<typeof CheckRunAnnotationSchema>;
 
 export const CheckRunAnnotationsSchema = v.array(CheckRunAnnotationSchema);
+
+/** One workflow run; `check_suite_id` reaches the run's check runs and annotations. */
+export const WorkflowRunSchema = v.object({
+    id: v.number(),
+    name: v.string(),
+    check_suite_id: v.number(),
+    head_sha: v.string(),
+    conclusion: v.nullable(v.string()),
+});
+export type WorkflowRun = v.InferOutput<typeof WorkflowRunSchema>;
+
+export const WorkflowRunsSchema = v.object({ workflow_runs: v.array(WorkflowRunSchema) });
