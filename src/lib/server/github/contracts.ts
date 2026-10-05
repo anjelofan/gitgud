@@ -90,3 +90,21 @@ export const WorkflowRunSchema = v.object({
 export type WorkflowRun = v.InferOutput<typeof WorkflowRunSchema>;
 
 export const WorkflowRunsSchema = v.object({ workflow_runs: v.array(WorkflowRunSchema) });
+
+/** The `workflow_run` delivery fields a grading decision is made from. */
+export const WorkflowRunWebhookSchema = v.object({
+    action: v.string(),
+    installation: v.object({ id: v.number() }),
+    repository: v.object({
+        name: v.string(),
+        owner: v.object({ login: v.string() }),
+    }),
+    workflow_run: v.object({
+        id: v.number(),
+        name: v.string(),
+        check_suite_id: v.number(),
+        head_sha: v.string(),
+        conclusion: v.nullable(v.string()),
+    }),
+});
+export type WorkflowRunWebhook = v.InferOutput<typeof WorkflowRunWebhookSchema>;
