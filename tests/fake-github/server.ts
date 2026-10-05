@@ -61,6 +61,8 @@ export class FakeGithub {
     #installationTokens = new Map<string, { status: number; body: unknown }>();
     #pullRequests = new Map<string, { status: number; body: unknown }>();
     #createdPullRequests = new Map<string, unknown>();
+    #checkRunsBySuite = new Map<string, { status: number; body: unknown }>();
+    #annotationsByCheckRun = new Map<string, { status: number; body: unknown }>();
     #nextAuthorizeToken: string | null = null;
     defaultToken = 'fake-default-access-token';
 
@@ -334,6 +336,82 @@ export class FakeGithub {
         });
     }
 
+    registerCheckSuiteCheckRuns({
+        token,
+        owner,
+        repo,
+        checkSuiteId,
+        checkRuns,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        checkSuiteId: number;
+        checkRuns: unknown[];
+    }) {
+        this.#checkRunsBySuite.set(`${token}\n${owner}\n${repo}\n${checkSuiteId}`, {
+            status: 200,
+            body: { total_count: checkRuns.length, check_runs: checkRuns },
+        });
+    }
+
+    registerCheckSuiteCheckRunsError({
+        token,
+        owner,
+        repo,
+        checkSuiteId,
+        status,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        checkSuiteId: number;
+        status: number;
+    }) {
+        this.#checkRunsBySuite.set(`${token}\n${owner}\n${repo}\n${checkSuiteId}`, {
+            status,
+            body: { message: 'fake check runs failure', status: String(status) },
+        });
+    }
+
+    registerCheckRunAnnotations({
+        token,
+        owner,
+        repo,
+        checkRunId,
+        annotations,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        checkRunId: number;
+        annotations: unknown[];
+    }) {
+        this.#annotationsByCheckRun.set(`${token}\n${owner}\n${repo}\n${checkRunId}`, {
+            status: 200,
+            body: annotations,
+        });
+    }
+
+    registerCheckRunAnnotationsError({
+        token,
+        owner,
+        repo,
+        checkRunId,
+        status,
+    }: {
+        token: string;
+        owner: string;
+        repo: string;
+        checkRunId: number;
+        status: number;
+    }) {
+        this.#annotationsByCheckRun.set(`${token}\n${owner}\n${repo}\n${checkRunId}`, {
+            status,
+            body: { message: 'fake check run annotations failure', status: String(status) },
+        });
+    }
+
     /** Makes the next OAuth authorize round-trip sign in as the given token's user (one-shot). */
     authorizeAs({ token }: { token: string }) {
         this.#nextAuthorizeToken = token;
@@ -368,6 +446,8 @@ export class FakeGithub {
         this.#installationTokens.clear();
         this.#pullRequests.clear();
         this.#createdPullRequests.clear();
+        this.#checkRunsBySuite.clear();
+        this.#annotationsByCheckRun.clear();
         this.#nextAuthorizeToken = null;
     }
 
@@ -549,6 +629,30 @@ export class FakeGithub {
         if (installationToken !== null && request.method === 'POST')
             return this.#installationToken(installationToken.groups?.id ?? '', response);
 
+        const checkSuiteCheckRuns = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/check-suites\/(?<id>\d+)\/check-runs$/u,
+        );
+        if (checkSuiteCheckRuns !== null && request.method === 'GET')
+            return this.#checkSuiteCheckRuns(
+                token,
+                decodeURIComponent(checkSuiteCheckRuns.groups?.owner ?? ''),
+                decodeURIComponent(checkSuiteCheckRuns.groups?.repo ?? ''),
+                checkSuiteCheckRuns.groups?.id ?? '',
+                response,
+            );
+
+        const checkRunAnnotations = url.pathname.match(
+            /^\/repos\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/check-runs\/(?<id>\d+)\/annotations$/u,
+        );
+        if (checkRunAnnotations !== null && request.method === 'GET')
+            return this.#checkRunAnnotations(
+                token,
+                decodeURIComponent(checkRunAnnotations.groups?.owner ?? ''),
+                decodeURIComponent(checkRunAnnotations.groups?.repo ?? ''),
+                checkRunAnnotations.groups?.id ?? '',
+                response,
+            );
+
         respond(response, 404, { message: 'Not Found' });
     }
 
@@ -664,6 +768,46 @@ export class FakeGithub {
                         owner: string;
                         repo: string;
                         title?: string;
+                        status: number;
+                    },
+                ),
+            registerCheckSuiteCheckRuns: (args) =>
+                this.registerCheckSuiteCheckRuns(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        checkSuiteId: number;
+                        checkRuns: unknown[];
+                    },
+                ),
+            registerCheckSuiteCheckRunsError: (args) =>
+                this.registerCheckSuiteCheckRunsError(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        checkSuiteId: number;
+                        status: number;
+                    },
+                ),
+            registerCheckRunAnnotations: (args) =>
+                this.registerCheckRunAnnotations(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        checkRunId: number;
+                        annotations: unknown[];
+                    },
+                ),
+            registerCheckRunAnnotationsError: (args) =>
+                this.registerCheckRunAnnotationsError(
+                    args as {
+                        token: string;
+                        owner: string;
+                        repo: string;
+                        checkRunId: number;
                         status: number;
                     },
                 ),
@@ -903,6 +1047,34 @@ export class FakeGithub {
             body: { ref: `refs/heads/${branch}`, object: { sha } },
         });
         respond(response, 200, { ref: `refs/heads/${branch}`, object: { sha } });
+    }
+
+    #checkSuiteCheckRuns(
+        token: string | null,
+        owner: string,
+        repo: string,
+        checkSuiteId: string,
+        response: ServerResponse,
+    ) {
+        const fixture = this.#checkRunsBySuite.get(`${token}\n${owner}\n${repo}\n${checkSuiteId}`);
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
+    }
+
+    #checkRunAnnotations(
+        token: string | null,
+        owner: string,
+        repo: string,
+        checkRunId: string,
+        response: ServerResponse,
+    ) {
+        const fixture = this.#annotationsByCheckRun.get(
+            `${token}\n${owner}\n${repo}\n${checkRunId}`,
+        );
+        if (typeof fixture === 'undefined')
+            return respond(response, 404, { message: 'Not Found', status: '404' });
+        respond(response, fixture.status, fixture.body);
     }
 
     #installation(org: string, response: ServerResponse) {

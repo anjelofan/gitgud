@@ -60,3 +60,21 @@ export const PullRequestSchema = v.object({
 });
 export type PullRequest = v.InferOutput<typeof PullRequestSchema>;
 export const PullRequestsSchema = v.array(PullRequestSchema);
+
+/** One check run of a check suite; `annotations_count` gates the annotation read. */
+export const CheckRunSchema = v.object({
+    id: v.number(),
+    output: v.object({ annotations_count: v.number() }),
+});
+export type CheckRun = v.InferOutput<typeof CheckRunSchema>;
+
+export const CheckRunsSchema = v.object({ check_runs: v.array(CheckRunSchema) });
+
+/** A check run annotation; the autograding marker lives in its `title` and `message`. */
+export const CheckRunAnnotationSchema = v.object({
+    title: v.nullable(v.string()),
+    message: v.string(),
+});
+export type CheckRunAnnotation = v.InferOutput<typeof CheckRunAnnotationSchema>;
+
+export const CheckRunAnnotationsSchema = v.array(CheckRunAnnotationSchema);
