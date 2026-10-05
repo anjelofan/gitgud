@@ -1,17 +1,19 @@
 <script lang="ts">
     import type { Assignment, Program } from '$lib/server/db/schema';
     import { resolve } from '$app/paths';
+    import { type ScoreSource, scoreLabel, summarizeScore } from '$lib/features/assignments/score';
+
+    interface StudentScore extends ScoreSource {
+        name: string;
+        login: string | null;
+        avatarUrl: string | null;
+    }
 
     interface Props {
         data: {
             assignment: Pick<Assignment, 'name' | 'deadline' | 'inviteToken' | 'templateRepo'>;
             program: Pick<Program, 'name' | 'id' | 'org'>;
-            students: {
-                name: string;
-                login: string | null;
-                avatarUrl: string | null;
-                repoName: string | null;
-            }[];
+            students: StudentScore[];
         };
     }
 
@@ -45,27 +47,28 @@
     >
 </p>
 
-{#each students as { name, login, avatarUrl, repoName }, idx (idx)}
+{#each students as student, idx (idx)}
     <div class="flex items-center justify-between">
         <div class="flex items-center justify-start">
-            {#if avatarUrl !== null}
-                <img src={avatarUrl} alt={`${login}'s avatar`} class="size-15" />
+            {#if student.avatarUrl !== null}
+                <img src={student.avatarUrl} alt={`${student.login}'s avatar`} class="size-15" />
             {/if}
             <div class="flex flex-col items-start justify-center">
-                <p>{name}</p>
-                {#if login !== null}
+                <p>{student.name}</p>
+                {#if student.login !== null}
                     <a
-                        href={`https://github.com/${login}`}
+                        href={`https://github.com/${student.login}`}
                         class="text-sm text-gray-400"
                         target="_blank"
-                        rel="noopener noreferrer">@{login}</a
+                        rel="noopener noreferrer">@{student.login}</a
                     >
                 {/if}
             </div>
         </div>
-        {#if repoName !== null}
+        <span>{scoreLabel(summarizeScore(student))}</span>
+        {#if student.repoName !== null}
             <a
-                href={`https://github.com/${program.org}/${repoName}`}
+                href={`https://github.com/${program.org}/${student.repoName}`}
                 target="_blank"
                 rel="noopener noreferrer">See repository</a
             >
