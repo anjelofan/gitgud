@@ -13,6 +13,7 @@ import {
     getClaimedRosterEntry,
     listAssignmentsForProgram,
     listUnclaimedRosterEntries,
+    resolveSubmissionForRepo,
 } from './queries.server.ts';
 
 const INSTRUCTOR = { githubId: 201, login: 'assignments-instructor', avatar_url: null };
@@ -463,5 +464,78 @@ describe('getAcceptedSubmissionForUser', () => {
         if (assignment === null) throw new Error('assignment fixture missing');
 
         expect(await getAcceptedSubmissionForUser(db, assignment.id, ownerId)).toBeNull();
+    });
+});
+
+describe('resolveSubmissionForRepo', () => {
+    /** Creates a program in `org` whose single roster entry holds a submission for `repoName`. */
+    async function programWithSubmission(
+        name: string,
+        org: string,
+        studentName: string,
+        repoName: string,
+    ) {
+        const creatorId = await instructorId(INSTRUCTOR.login);
+        const program = await createProgramWithRoster(db, {
+            creatorId,
+            name,
+            org,
+            studentNames: [studentName],
+        });
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: creatorId,
+            programId: program.id,
+            name: `${name} Assignment`,
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'fixture-template',
+        });
+        if (assignment === null) throw new Error('assignment fixture missing');
+
+        const [entry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(
+                and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, studentName)),
+            );
+        if (typeof entry === 'undefined') throw new Error('roster fixture missing');
+
+        const [submission] = await db
+            .insert(submissions)
+            .values({ assignmentId: assignment.id, rosterEntryId: entry.id, repoName })
+            .returning({ id: submissions.id });
+        if (typeof submission === 'undefined') throw new Error('submission fixture missing');
+
+        return { assignment, submission };
+    }
+
+    it('resolves the submission a repository belongs to', async () => {
+        const { assignment, submission } = await programWithSubmission(
+            'Resolve Program',
+            'resolve-org',
+            'Alice',
+            'resolve-repo',
+        );
+
+        expect(await resolveSubmissionForRepo(db, 'resolve-org', 'resolve-repo')).toEqual({
+            status: 'found',
+            submissionId: submission.id,
+            assignmentId: assignment.id,
+            gradingWorkflow: null,
+        });
+    });
+
+    it('reports a repository that belongs to no submission', async () => {
+        expect(await resolveSubmissionForRepo(db, 'resolve-org', 'unclaimed-repo')).toEqual({
+            status: 'missing',
+        });
+    });
+
+    it('reports a repository two assignments claim', async () => {
+        await programWithSubmission('First Program', 'collide-org', 'Alice', 'shared-repo');
+        await programWithSubmission('Second Program', 'collide-org', 'Bob', 'shared-repo');
+
+        expect(await resolveSubmissionForRepo(db, 'collide-org', 'shared-repo')).toEqual({
+            status: 'ambiguous',
+        });
     });
 });

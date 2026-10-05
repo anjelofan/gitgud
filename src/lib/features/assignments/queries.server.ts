@@ -203,3 +203,47 @@ export async function getClaimedRosterEntry(db: DbConnection, programId: string,
         return entry;
     });
 }
+
+/**
+ * Resolves the submission a repository belongs to. A repository identifies a
+ * submission only by the program org it lives in and its name, so `ambiguous`
+ * means two assignments claim the same repository — a state the caller must
+ * refuse to grade rather than guess between.
+ */
+export type SubmissionLookup =
+    | {
+          status: 'found';
+          submissionId: string;
+          assignmentId: string;
+          gradingWorkflow: string | null;
+      }
+    | { status: 'missing' }
+    | { status: 'ambiguous' };
+
+export async function resolveSubmissionForRepo(
+    db: DbConnection,
+    org: string,
+    repoName: string,
+): Promise<SubmissionLookup> {
+    return await tracer.asyncSpan('resolve-submission-for-repo', async (span) => {
+        span.setAttributes({ 'github.org': org, 'submission.repo_name': repoName });
+
+        const rows = await db
+            .select({
+                submissionId: submissions.id,
+                assignmentId: assignments.id,
+                gradingWorkflow: assignments.gradingWorkflow,
+            })
+            .from(submissions)
+            .innerJoin(assignments, eq(submissions.assignmentId, assignments.id))
+            .innerJoin(programs, eq(assignments.programId, programs.id))
+            .where(and(eq(programs.org, org), eq(submissions.repoName, repoName)))
+            .limit(2);
+
+        const [row, duplicate] = rows;
+        if (typeof row === 'undefined') return { status: 'missing' };
+        if (typeof duplicate !== 'undefined') return { status: 'ambiguous' };
+
+        return { status: 'found', ...row };
+    });
+}
