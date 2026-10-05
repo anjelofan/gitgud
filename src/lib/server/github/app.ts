@@ -50,6 +50,31 @@ function mintAppJwt(clientId: string, privateKey: string, issuedAt: number) {
 }
 
 /**
+ * Mints an installation access token for a known installation id. A webhook
+ * payload carries the installation id directly, so this needs no org lookup.
+ */
+export async function getInstallationToken(installationId: number) {
+    return await tracer.asyncSpan('get-installation-token', async (span) => {
+        span.setAttribute('github.installation.id', installationId);
+
+        const { clientId, privateKey } = getAppCredentials();
+        const appJwt = mintAppJwt(clientId, privateKey, Math.floor(Date.now() / 1000));
+
+        const created = await githubApi(
+            `/app/installations/${installationId}/access_tokens`,
+            InstallationTokenSchema,
+            { method: 'POST', token: appJwt },
+        );
+        logger.debug('minted an installation access token', {
+            'github.installation.id': installationId,
+            'github.installation.token_expires_at': created.expires_at,
+        });
+
+        return created.token;
+    });
+}
+
+/**
  * Mints an installation access token for the app's installation on `org`.
  * Returns `null` when the app is not installed on the org; otherwise the
  * token is used for server-to-server calls (repo provisioning).
@@ -83,16 +108,6 @@ export async function getOrgInstallationToken(org: string) {
         }
         span.setAttribute('github.installation.id', installation.id);
 
-        const created = await githubApi(
-            `/app/installations/${installation.id}/access_tokens`,
-            InstallationTokenSchema,
-            { method: 'POST', token: appJwt },
-        );
-        logger.debug('minted an installation access token', {
-            'github.installation.id': installation.id,
-            'github.installation.token_expires_at': created.expires_at,
-        });
-
-        return created.token;
+        return await getInstallationToken(installation.id);
     });
 }

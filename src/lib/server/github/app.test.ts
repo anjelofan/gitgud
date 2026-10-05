@@ -2,11 +2,21 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { fakeGithub } from '$tests/fake-github/client';
 
-import { getOrgInstallationToken } from './app';
+import { getInstallationToken, getOrgInstallationToken } from './app';
 
 beforeAll(async () => {
     await fakeGithub('registerInstallation', { org: 'app-org', installationId: 42 });
     await fakeGithub('registerInstallationError', { org: 'boom-org', status: 500 });
+});
+
+describe('getInstallationToken', () => {
+    it('mints an installation access token for a known installation id', async () => {
+        expect(await getInstallationToken(42)).toBe('installation-token-42');
+    });
+
+    it('throws when the installation is unknown (404)', async () => {
+        await expect(getInstallationToken(999)).rejects.toThrow(/404/u);
+    });
 });
 
 describe('getOrgInstallationToken', () => {
