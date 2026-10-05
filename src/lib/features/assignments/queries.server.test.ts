@@ -192,8 +192,21 @@ describe('getAssignmentForInstructor', () => {
                 login: 'student-cat',
                 avatarUrl: 'https://avatars.example/student-cat.png',
                 repoName: 'dashboard-assignment-student-cat',
+                score: null,
+                maxScore: null,
+                gradedAt: null,
+                gradingConclusion: null,
             },
-            { name: 'Bob', login: null, avatarUrl: null, repoName: null },
+            {
+                name: 'Bob',
+                login: null,
+                avatarUrl: null,
+                repoName: null,
+                score: null,
+                maxScore: null,
+                gradedAt: null,
+                gradingConclusion: null,
+            },
         ]);
     });
 
@@ -238,7 +251,16 @@ describe('getAssignmentForInstructor', () => {
         expect(stored).not.toBeNull();
         if (stored === null) return;
         expect(stored.students).toEqual([
-            { name: 'Alice', login: null, avatarUrl: null, repoName: null },
+            {
+                name: 'Alice',
+                login: null,
+                avatarUrl: null,
+                repoName: null,
+                score: null,
+                maxScore: null,
+                gradedAt: null,
+                gradingConclusion: null,
+            },
         ]);
     });
 

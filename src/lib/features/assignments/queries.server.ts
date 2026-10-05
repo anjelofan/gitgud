@@ -98,6 +98,10 @@ export async function getAssignmentForInstructor(
                 login: users.login,
                 avatarUrl: users.avatarUrl,
                 repoName: submissions.repoName,
+                score: submissions.score,
+                maxScore: submissions.maxScore,
+                gradedAt: submissions.gradedAt,
+                gradingConclusion: submissions.gradingConclusion,
             })
             .from(rosterEntries)
             .leftJoin(users, eq(rosterEntries.claimedUserId, users.id))
