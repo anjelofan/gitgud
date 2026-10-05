@@ -7,7 +7,7 @@ import { db } from '$lib/server/db';
 import { fakeGithub } from '$tests/fake-github/client';
 
 import { createAssignmentForProgram } from './queries.server';
-import { recordGradingRun } from './grading.server';
+import { recordGradingRun, syncSubmissionScore } from './grading.server';
 
 const TOKEN = 'grading-access-token';
 const ORG = 'grading-org';
@@ -38,6 +38,14 @@ const LINT_RUN = {
     id: 8201,
     name: 'Lint',
     checkSuiteId: 9201,
+    headSha: 'sha-lint',
+    conclusion: 'success',
+};
+
+const UNRELATED_RUN = {
+    id: 8300,
+    name: 'Lint',
+    checkSuiteId: 9110,
     headSha: 'sha-lint',
     conclusion: 'success',
 };
@@ -100,6 +108,20 @@ beforeAll(async () => {
         owner: ORG,
         repo: 'lint-repo',
         checkRunId: 5010,
+        annotations: [{ title: 'Lint', message: 'no issues found' }],
+    });
+    await fakeGithub('registerCheckSuiteCheckRuns', {
+        token: TOKEN,
+        owner: ORG,
+        repo: 'graded-repo',
+        checkSuiteId: UNRELATED_RUN.checkSuiteId,
+        checkRuns: [{ id: 5011, output: { annotations_count: 1 } }],
+    });
+    await fakeGithub('registerCheckRunAnnotations', {
+        token: TOKEN,
+        owner: ORG,
+        repo: 'graded-repo',
+        checkRunId: 5011,
         annotations: [{ title: 'Lint', message: 'no issues found' }],
     });
 });
@@ -285,5 +307,74 @@ describe('recordGradingRun', () => {
                 run: SCORED_RUN,
             }),
         ).toEqual({ status: 'submission-missing' });
+    });
+});
+
+describe('syncSubmissionScore', () => {
+    it('records the newest grading run, skipping a newer unrelated workflow', async () => {
+        const { submission } = await submissionFixture('graded-repo');
+
+        const outcome = await syncSubmissionScore(db, {
+            token: TOKEN,
+            org: ORG,
+            repoName: 'graded-repo',
+            runs: [UNRELATED_RUN, SCORED_RUN],
+        });
+
+        expect(outcome).toEqual({ status: 'recorded', score: { score: 8, maxScore: 10 } });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.gradingRunId).toBe(SCORED_RUN.id);
+    });
+
+    it('records the newest run even when the caller lists runs oldest first', async () => {
+        const { submission } = await submissionFixture('graded-repo');
+
+        const outcome = await syncSubmissionScore(db, {
+            token: TOKEN,
+            org: ORG,
+            repoName: 'graded-repo',
+            runs: [PASSED_EARLIER_RUN, SCORED_RUN],
+        });
+
+        expect(outcome).toEqual({ status: 'recorded', score: { score: 8, maxScore: 10 } });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.gradingRunId).toBe(SCORED_RUN.id);
+    });
+
+    it('leaves the submission untouched when no run is a grading run', async () => {
+        const { submission } = await submissionFixture('graded-repo');
+
+        const outcome = await syncSubmissionScore(db, {
+            token: TOKEN,
+            org: ORG,
+            repoName: 'graded-repo',
+            runs: [UNRELATED_RUN],
+        });
+
+        expect(outcome).toEqual({ status: 'no-grading-run' });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.gradingRunId).toBeNull();
+    });
+
+    it('reports an already-current grade instead of rewriting it', async () => {
+        const { submission } = await submissionFixture('graded-repo');
+        await recordGradingRun(db, {
+            token: TOKEN,
+            org: ORG,
+            repoName: 'graded-repo',
+            run: SCORED_RUN,
+        });
+
+        const outcome = await syncSubmissionScore(db, {
+            token: TOKEN,
+            org: ORG,
+            repoName: 'graded-repo',
+            runs: [SCORED_RUN, PASSED_EARLIER_RUN],
+        });
+
+        expect(outcome).toEqual({ status: 'superseded' });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.score).toBe('8.00');
+        expect(stored.gradingRunId).toBe(SCORED_RUN.id);
     });
 });

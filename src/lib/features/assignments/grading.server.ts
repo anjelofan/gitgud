@@ -172,3 +172,37 @@ export async function recordGradingRun(
         return { status: 'recorded', score };
     });
 }
+
+/**
+ * Walks a repository's recent completed runs newest-first and records the first
+ * grading run among them, so an instructor can pull scores without waiting for
+ * a delivery. Runs belonging to other workflows are skipped, and `superseded`
+ * is the steady state once an equal or newer run is already stored.
+ */
+export async function syncSubmissionScore(
+    db: DbConnection,
+    args: { token: string; org: string; repoName: string; runs: GradingRun[] },
+): Promise<RecordGradingOutcome | { status: 'no-grading-run' }> {
+    return await tracer.asyncSpan('sync-submission-score', async (span) => {
+        span.setAttributes({
+            'github.org': args.org,
+            'submission.repo_name': args.repoName,
+            'grading.run_count': args.runs.length,
+        });
+
+        // GitHub answers newest first, but that ordering is not a documented
+        // contract, so the newest run is chosen by the monotonic run id.
+        const newestFirst = [...args.runs].sort((left, right) => right.id - left.id);
+        for (const run of newestFirst) {
+            const outcome = await recordGradingRun(db, {
+                token: args.token,
+                org: args.org,
+                repoName: args.repoName,
+                run,
+            });
+            if (outcome.status !== 'not-grading') return outcome;
+        }
+
+        return { status: 'no-grading-run' };
+    });
+}
