@@ -9,7 +9,8 @@ SECRET_DIR="${1:-secrets}"
 
 for name in gitgud_db_user gitgud_db_password gitgud_db_name gitgud_db_url \
     gitgud_github_app_client_id gitgud_github_app_client_secret \
-    gitgud_github_app_private_key gitgud_session_secret; do
+    gitgud_github_app_private_key gitgud_session_secret \
+    gitgud_webhook_secret; do
     file="$SECRET_DIR/$name.txt"
     if [ ! -f "$file" ]; then
         echo "skip: missing $file"
