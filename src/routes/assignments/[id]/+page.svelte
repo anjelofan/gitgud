@@ -9,15 +9,20 @@
         avatarUrl: string | null;
     }
 
+    type RefreshReport =
+        | { ok: true; submitted: number; recorded: number; current: number; failed: number }
+        | { ok: false; message: string };
+
     interface Props {
         data: {
             assignment: Pick<Assignment, 'name' | 'deadline' | 'inviteToken' | 'templateRepo'>;
             program: Pick<Program, 'name' | 'id' | 'org'>;
             students: StudentScore[];
         };
+        form: { refresh: RefreshReport } | null;
     }
 
-    let { data }: Props = $props();
+    let { data, form }: Props = $props();
     let { assignment, program, students } = $derived(data);
 </script>
 
@@ -46,6 +51,21 @@
         {assignment.templateRepo}</a
     >
 </p>
+
+<form method="POST" action="?/refresh-scores">
+    <button type="submit">Refresh scores</button>
+</form>
+
+{#if form !== null}
+    {#if form.refresh.ok}
+        <p>
+            {form.refresh.submitted} repositories checked: {form.refresh.recorded} updated,
+            {form.refresh.current} already current, {form.refresh.failed} failed.
+        </p>
+    {:else}
+        <p role="alert">{form.refresh.message}</p>
+    {/if}
+{/if}
 
 {#each students as student, idx (idx)}
     <div class="flex items-center justify-between">

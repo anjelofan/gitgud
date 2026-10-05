@@ -5,8 +5,10 @@ import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
 import { assignments, submissions } from '$lib/server/db/schema';
 import type { DbConnection } from '$lib/server/db';
 import { listCheckRunAnnotations, listCheckSuiteCheckRuns } from '$lib/server/github/checks';
+import { listCompletedWorkflowRuns } from '$lib/server/github/actions';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
+import type { WorkflowRun } from '$lib/server/github/contracts';
 
 import { parseAutogradingScore } from './grading';
 import { resolveSubmissionForRepo } from './queries.server';
@@ -204,5 +206,100 @@ export async function syncSubmissionScore(
         }
 
         return { status: 'no-grading-run' };
+    });
+}
+
+/** Adapts a GitHub workflow run to the shape the grading policy works in. */
+export function toGradingRun(run: WorkflowRun): GradingRun {
+    return {
+        id: run.id,
+        name: run.name,
+        checkSuiteId: run.check_suite_id,
+        headSha: run.head_sha,
+        conclusion: run.conclusion,
+    };
+}
+
+export interface RefreshOutcome {
+    submitted: number;
+    recorded: number;
+    current: number;
+    failed: number;
+}
+
+type PullResult = 'recorded' | 'current' | 'failed';
+
+/**
+ * Pulls one repository's current score, translating an unreachable repository
+ * into `failed` so that a single bad repository cannot abandon the batch.
+ */
+async function pullSubmissionScore(
+    db: DbConnection,
+    args: { token: string; org: string },
+    repoName: string,
+): Promise<PullResult> {
+    try {
+        const { workflow_runs: runs } = await listCompletedWorkflowRuns(
+            args.token,
+            args.org,
+            repoName,
+        );
+        const result = await syncSubmissionScore(db, {
+            token: args.token,
+            org: args.org,
+            repoName,
+            runs: runs.map(toGradingRun),
+        });
+        if (result.status === 'recorded') return 'recorded';
+
+        return 'current';
+    } catch (error) {
+        const cause = error instanceof Error ? error : new Error(String(error));
+        logger.error('pulling a submission score failed', cause, {
+            'github.org': args.org,
+            'submission.repo_name': repoName,
+        });
+
+        return 'failed';
+    }
+}
+
+/**
+ * Pulls the current score of every submitted repository of an assignment. One
+ * unreachable repository must not abandon the rest of the batch, so a failure
+ * is counted and logged rather than thrown; `current` counts repositories
+ * whose stored grade the newest run already agrees with.
+ */
+export async function refreshAssignmentScores(
+    db: DbConnection,
+    args: { token: string; org: string; repos: string[] },
+): Promise<RefreshOutcome> {
+    return await tracer.asyncSpan('refresh-assignment-scores', async (span) => {
+        span.setAttributes({
+            'github.org': args.org,
+            'grading.repository_count': args.repos.length,
+        });
+
+        const outcome: RefreshOutcome = {
+            submitted: args.repos.length,
+            recorded: 0,
+            current: 0,
+            failed: 0,
+        };
+
+        for (const repoName of args.repos) {
+            const result = await pullSubmissionScore(db, args, repoName);
+            if (result === 'recorded') outcome.recorded += 1;
+            else if (result === 'current') outcome.current += 1;
+            else outcome.failed += 1;
+        }
+
+        span.setAttributes({
+            'grading.recorded': outcome.recorded,
+            'grading.current': outcome.current,
+            'grading.failed': outcome.failed,
+        });
+
+        return outcome;
     });
 }

@@ -7,7 +7,7 @@ import { db } from '$lib/server/db';
 import { fakeGithub } from '$tests/fake-github/client';
 
 import { createAssignmentForProgram } from './queries.server';
-import { recordGradingRun, syncSubmissionScore } from './grading.server';
+import { recordGradingRun, refreshAssignmentScores, syncSubmissionScore } from './grading.server';
 
 const TOKEN = 'grading-access-token';
 const ORG = 'grading-org';
@@ -123,6 +123,26 @@ beforeAll(async () => {
         repo: 'graded-repo',
         checkRunId: 5011,
         annotations: [{ title: 'Lint', message: 'no issues found' }],
+    });
+    await fakeGithub('registerWorkflowRuns', {
+        token: TOKEN,
+        owner: ORG,
+        repo: 'graded-repo',
+        runs: [
+            {
+                id: SCORED_RUN.id,
+                name: SCORED_RUN.name,
+                check_suite_id: SCORED_RUN.checkSuiteId,
+                head_sha: SCORED_RUN.headSha,
+                conclusion: SCORED_RUN.conclusion,
+            },
+        ],
+    });
+    await fakeGithub('registerWorkflowRunsError', {
+        token: TOKEN,
+        owner: ORG,
+        repo: 'ghost-repo',
+        status: 404,
     });
 });
 
@@ -376,5 +396,41 @@ describe('syncSubmissionScore', () => {
         const stored = await storedSubmission(submission.id);
         expect(stored.score).toBe('8.00');
         expect(stored.gradingRunId).toBe(SCORED_RUN.id);
+    });
+});
+
+describe('refreshAssignmentScores', () => {
+    it('keeps pulling after a repository it cannot reach', async () => {
+        const { submission } = await submissionFixture('graded-repo');
+
+        const outcome = await refreshAssignmentScores(db, {
+            token: TOKEN,
+            org: ORG,
+            repos: ['ghost-repo', 'graded-repo'],
+        });
+
+        expect(outcome).toEqual({ submitted: 2, recorded: 1, current: 0, failed: 1 });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.score).toBe('8.00');
+    });
+
+    it('counts an already-current grade as current rather than failed', async () => {
+        const { submission } = await submissionFixture('graded-repo');
+        await recordGradingRun(db, {
+            token: TOKEN,
+            org: ORG,
+            repoName: 'graded-repo',
+            run: SCORED_RUN,
+        });
+
+        const outcome = await refreshAssignmentScores(db, {
+            token: TOKEN,
+            org: ORG,
+            repos: ['graded-repo'],
+        });
+
+        expect(outcome).toEqual({ submitted: 1, recorded: 0, current: 1, failed: 0 });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.score).toBe('8.00');
     });
 });
