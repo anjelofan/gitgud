@@ -12,6 +12,7 @@ bun.lockb
 .svelte-kit
 build
 node_modules
+.pnpm-store/
 .env
 .env.*
 !.env.example
