@@ -29,6 +29,13 @@
             "when": 1790269063249,
             "tag": "0003_add-roster-claim-and-submissions",
             "breakpoints": true
+        },
+        {
+            "idx": 4,
+            "version": "7",
+            "when": 1791207790200,
+            "tag": "0004_add-grading-columns",
+            "breakpoints": true
         }
     ]
 }

@@ -1,4 +1,13 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+    bigint,
+    index,
+    numeric,
+    pgTable,
+    text,
+    timestamp,
+    uniqueIndex,
+    uuid,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 import { programs, rosterEntries } from './programs.ts';
@@ -14,6 +23,7 @@ export const assignments = pgTable(
         deadline: timestamp('deadline', { withTimezone: true }).notNull(),
         inviteToken: text('invite_token').notNull().unique(),
         templateRepo: text('template_repo').notNull(),
+        gradingWorkflow: text('grading_workflow'),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true })
             .notNull()
@@ -34,6 +44,12 @@ export const submissions = pgTable(
             .notNull()
             .references(() => rosterEntries.id, { onDelete: 'cascade' }),
         repoName: text('repo_name').notNull(),
+        score: numeric('score', { precision: 7, scale: 2 }),
+        maxScore: numeric('max_score', { precision: 7, scale: 2 }),
+        gradedAt: timestamp('graded_at', { withTimezone: true }),
+        gradingRunId: bigint('grading_run_id', { mode: 'number' }),
+        gradingConclusion: text('grading_conclusion'),
+        gradingHeadSha: text('grading_head_sha'),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => [
@@ -42,6 +58,7 @@ export const submissions = pgTable(
             table.rosterEntryId,
         ),
         index('submissions_roster_entry_id_idx').on(table.rosterEntryId),
+        index('submissions_repo_name_idx').on(table.repoName),
     ],
 );
 
