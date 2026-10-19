@@ -124,6 +124,34 @@ beforeAll(async () => {
         checkRunId: 5011,
         annotations: [{ title: 'Lint', message: 'no issues found' }],
     });
+    await fakeGithub('registerCheckSuiteCheckRuns', {
+        token: TOKEN,
+        owner: ORG,
+        repo: 'lint-only-repo',
+        checkSuiteId: UNRELATED_RUN.checkSuiteId,
+        checkRuns: [{ id: 5012, output: { annotations_count: 1 } }],
+    });
+    await fakeGithub('registerCheckRunAnnotations', {
+        token: TOKEN,
+        owner: ORG,
+        repo: 'lint-only-repo',
+        checkRunId: 5012,
+        annotations: [{ title: 'Lint', message: 'no issues found' }],
+    });
+    await fakeGithub('registerWorkflowRuns', {
+        token: TOKEN,
+        owner: ORG,
+        repo: 'lint-only-repo',
+        runs: [
+            {
+                id: UNRELATED_RUN.id,
+                name: UNRELATED_RUN.name,
+                check_suite_id: UNRELATED_RUN.checkSuiteId,
+                head_sha: UNRELATED_RUN.headSha,
+                conclusion: UNRELATED_RUN.conclusion,
+            },
+        ],
+    });
     await fakeGithub('registerWorkflowRuns', {
         token: TOKEN,
         owner: ORG,
@@ -409,7 +437,13 @@ describe('refreshAssignmentScores', () => {
             repos: ['ghost-repo', 'graded-repo'],
         });
 
-        expect(outcome).toEqual({ submitted: 2, recorded: 1, current: 0, failed: 1 });
+        expect(outcome).toEqual({
+            submitted: 2,
+            recorded: 1,
+            current: 0,
+            noScoreFound: 0,
+            failed: 1,
+        });
         const stored = await storedSubmission(submission.id);
         expect(stored.score).toBe('8.00');
     });
@@ -429,8 +463,35 @@ describe('refreshAssignmentScores', () => {
             repos: ['graded-repo'],
         });
 
-        expect(outcome).toEqual({ submitted: 1, recorded: 0, current: 1, failed: 0 });
+        expect(outcome).toEqual({
+            submitted: 1,
+            recorded: 0,
+            current: 1,
+            noScoreFound: 0,
+            failed: 0,
+        });
         const stored = await storedSubmission(submission.id);
         expect(stored.score).toBe('8.00');
+    });
+
+    it('reports a repository with no grading run as no score found, not current', async () => {
+        const { submission } = await submissionFixture('lint-only-repo');
+
+        const outcome = await refreshAssignmentScores(db, {
+            token: TOKEN,
+            org: ORG,
+            repos: ['lint-only-repo'],
+        });
+
+        expect(outcome).toEqual({
+            submitted: 1,
+            recorded: 0,
+            current: 0,
+            noScoreFound: 1,
+            failed: 0,
+        });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.gradingRunId).toBeNull();
+        expect(stored.gradedAt).toBeNull();
     });
 });

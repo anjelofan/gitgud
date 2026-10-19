@@ -10,7 +10,14 @@
     }
 
     type RefreshReport =
-        | { ok: true; submitted: number; recorded: number; current: number; failed: number }
+        | {
+              ok: true;
+              submitted: number;
+              recorded: number;
+              current: number;
+              noScoreFound: number;
+              failed: number;
+          }
         | { ok: false; message: string };
 
     interface Props {
@@ -60,7 +67,8 @@
     {#if form.refresh.ok}
         <p>
             {form.refresh.submitted} repositories checked: {form.refresh.recorded} updated,
-            {form.refresh.current} already current, {form.refresh.failed} failed.
+            {form.refresh.current} already current, {form.refresh.noScoreFound} no score found,
+            {form.refresh.failed} failed.
         </p>
     {:else}
         <p role="alert">{form.refresh.message}</p>

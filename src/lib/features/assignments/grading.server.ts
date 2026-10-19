@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
 
+import { assertNever } from '$lib/assert';
 import { assignments, submissions } from '$lib/server/db/schema';
 import type { DbConnection } from '$lib/server/db';
 import { listCheckRunAnnotations, listCheckSuiteCheckRuns } from '$lib/server/github/checks';
@@ -224,6 +225,7 @@ export interface RefreshOutcome {
     submitted: number;
     recorded: number;
     current: number;
+    noScoreFound: number;
     failed: number;
 }
 
@@ -231,7 +233,9 @@ type PullResult = 'recorded' | 'current' | 'failed';
 
 /**
  * Pulls one repository's current score, translating an unreachable repository
- * into `failed` so that a single bad repository cannot abandon the batch.
+ * into `failed` so that a single bad repository cannot abandon the batch. A
+ * repository with no grading run is reported as `no-score-found`, distinct from
+ * a stored grade the newest run already agrees with.
  */
 async function pullSubmissionScore(
     db: DbConnection,
@@ -250,9 +254,21 @@ async function pullSubmissionScore(
             repoName,
             runs: runs.map(toGradingRun),
         });
-        if (result.status === 'recorded') return 'recorded';
 
-        return 'current';
+        switch (result.status) {
+            case 'recorded':
+                return 'recorded';
+            case 'superseded':
+                return 'current';
+            case 'not-grading':
+            case 'no-grading-run':
+                return 'no-score-found';
+            case 'submission-missing':
+            case 'submission-ambiguous':
+                return 'failed';
+            default:
+                assertNever(result);
+        }
     } catch (error) {
         const cause = error instanceof Error ? error : new Error(String(error));
         logger.error('pulling a submission score failed', cause, {
@@ -284,19 +300,34 @@ export async function refreshAssignmentScores(
             submitted: args.repos.length,
             recorded: 0,
             current: 0,
+            noScoreFound: 0,
             failed: 0,
         };
 
         for (const repoName of args.repos) {
             const result = await pullSubmissionScore(db, args, repoName);
-            if (result === 'recorded') outcome.recorded += 1;
-            else if (result === 'current') outcome.current += 1;
-            else outcome.failed += 1;
+            switch (result) {
+                case 'recorded':
+                    outcome.recorded += 1;
+                    break;
+                case 'current':
+                    outcome.current += 1;
+                    break;
+                case 'no-score-found':
+                    outcome.noScoreFound += 1;
+                    break;
+                case 'failed':
+                    outcome.failed += 1;
+                    break;
+                default:
+                    assertNever(result);
+            }
         }
 
         span.setAttributes({
             'grading.recorded': outcome.recorded,
             'grading.current': outcome.current,
+            'grading.no_score_found': outcome.noScoreFound,
             'grading.failed': outcome.failed,
         });
 

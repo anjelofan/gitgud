@@ -118,6 +118,7 @@ export const actions = {
                 'grading.repository_count': refresh.submitted,
                 'grading.recorded': refresh.recorded,
                 'grading.current': refresh.current,
+                'grading.no_score_found': refresh.noScoreFound,
                 'grading.failed': refresh.failed,
             });
 
