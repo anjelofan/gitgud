@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { expectSignedInAs, signOut } from './session';
+
 import { fakeGithub } from './fake-github/client';
 
 // The Playwright fake GitHub server signs every OAuth exchange in as its
@@ -123,8 +125,7 @@ test.describe('assignment invitation journey', () => {
         await createProgramAndAssignment(page);
         const invite = await inviteUrlOf(page);
 
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
+        await signOut(page);
         await page.goto(invite);
         await expect(page.getByRole('heading', { level: 1, name: ASSIGNMENT_NAME })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Jane Doe' })).toBeVisible();
@@ -136,8 +137,7 @@ test.describe('assignment invitation journey', () => {
 
         // Sign in as the student directly on the invite link; the fake OAuth
         // server auto-grants the authorized user and returns to the invite.
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
+        await signOut(page);
         await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
         await page.goto(invite);
         await expect(page.getByRole('heading', { level: 1, name: ASSIGNMENT_NAME })).toBeVisible();
@@ -151,14 +151,14 @@ test.describe('assignment invitation journey', () => {
             'href',
             `https://github.com/${ORG}/${REPO_NAME}`,
         );
+        await expectSignedInAs(page, STUDENT_LOGIN);
     });
 
     test('revisiting the invite after accepting shows the existing repo', async ({ page }) => {
         await createProgramAndAssignment(page);
         const invite = await inviteUrlOf(page);
 
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
+        await signOut(page);
         await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
         await page.goto(invite);
         await expect(page.getByRole('heading', { level: 1, name: ASSIGNMENT_NAME })).toBeVisible();
@@ -167,6 +167,7 @@ test.describe('assignment invitation journey', () => {
         await page.getByRole('button', { name: 'Jane Doe' }).click();
         await page.getByRole('button', { name: 'Accept assignment' }).click();
         await expect(page.getByText('Assignment accepted!')).toBeVisible();
+        await expectSignedInAs(page, STUDENT_LOGIN);
 
         await page.goto(invite);
         await expect(page.getByText('You have already accepted this assignment.')).toBeVisible();
@@ -180,17 +181,15 @@ test.describe('assignment invitation journey', () => {
         const assignmentUrl = await createProgramAndAssignment(page);
         const invite = await inviteUrlOf(page);
 
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
+        await signOut(page);
         await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
         await page.goto(invite);
         await page.getByRole('button', { name: 'Jane Doe' }).click();
         await page.getByRole('button', { name: 'Accept assignment' }).click();
         await expect(page.getByText('Assignment accepted!')).toBeVisible();
+        await expectSignedInAs(page, STUDENT_LOGIN);
 
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
-        await page.goto('/');
+        await signOut(page);
         await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
         await expect(page.getByText('Signed in as octocat')).toBeVisible();
 

@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { signOut } from './session';
+
 import { fakeGithub } from './fake-github/client';
 
 // The Playwright fake GitHub server signs every OAuth exchange in as its
@@ -157,8 +159,7 @@ test.describe('assignment creation journey', () => {
         const assignmentUrl = page.url();
 
         // Sign out and sign back in as a different GitHub user
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
+        await signOut(page);
         await fakeGithub('registerUser', {
             token: 'second-user-token',
             user: {
@@ -168,7 +169,6 @@ test.describe('assignment creation journey', () => {
             },
         });
         await fakeGithub('authorizeAs', { token: 'second-user-token' });
-        await page.goto('/');
         await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
         await expect(page.getByText('Signed in as second-cat')).toBeVisible();
 

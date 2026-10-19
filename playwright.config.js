@@ -31,12 +31,12 @@ export default defineConfig({
             command: 'node tests/fake-github/start.js',
             port: fakeGitHubPort,
             env: { FAKE_GITHUB_PORT: String(fakeGitHubPort) },
-            reuseExistingServer: !process.env.CI,
+            reuseExistingServer: false,
         },
         {
             command: 'pnpm preview',
             port: 4173,
-            reuseExistingServer: !process.env.CI,
+            reuseExistingServer: false,
             gracefulShutdown: { signal: 'SIGINT', timeout: 0 },
             env: testEnv,
         },
@@ -51,6 +51,7 @@ export default defineConfig({
     maxFailures: 1,
     reporter: 'dot',
     fullyParallel: false,
+    workers: 1,
     forbidOnly: Boolean(process.env.CI),
     failOnEmptyTestSuite: false,
 });

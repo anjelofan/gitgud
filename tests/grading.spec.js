@@ -2,6 +2,8 @@ import { createHmac } from 'node:crypto';
 
 import { expect, test } from '@playwright/test';
 
+import { expectSignedInAs, signOut } from './session';
+
 import { fakeGithub } from './fake-github/client';
 
 // The Playwright fake GitHub server signs every OAuth exchange in as its
@@ -204,18 +206,16 @@ test.describe('grading scores', () => {
 
         // The student claims the roster entry and accepts, which provisions the
         // repository the grading run will report against.
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
+        await signOut(page);
         await fakeGithub('authorizeAs', { token: STUDENT_TOKEN });
         await page.goto(invite);
         await page.getByRole('button', { name: 'Jane Doe' }).click();
         await page.getByRole('button', { name: 'Accept assignment' }).click();
         await expect(page.getByText('Assignment accepted!')).toBeVisible();
+        await expectSignedInAs(page, STUDENT_LOGIN);
 
         // Back as the instructor: the submission exists, but no run has concluded.
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Sign out' }).click();
-        await page.goto('/');
+        await signOut(page);
         await page.getByRole('link', { name: 'Sign in with GitHub' }).click();
         await expect(page.getByText('Signed in as octocat')).toBeVisible();
         await page.goto(assignmentUrl);
