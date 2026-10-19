@@ -12,7 +12,7 @@ export function verifyWebhookSignature(
     secret: string,
     payload: string,
     signatureHeader: string | null,
-): boolean {
+) {
     if (signatureHeader === null) return false;
     if (!signatureHeader.startsWith(SIGNATURE_PREFIX)) return false;
 

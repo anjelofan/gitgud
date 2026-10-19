@@ -50,7 +50,7 @@ async function readGradingRunScore(
     org: string,
     repoName: string,
     checkSuiteId: number,
-): Promise<GradingRunScore | null> {
+) {
     return await tracer.asyncSpan('read-grading-run-score', async (span) => {
         span.setAttributes({
             'github.org': org,
@@ -229,8 +229,6 @@ export interface RefreshOutcome {
     failed: number;
 }
 
-type PullResult = 'recorded' | 'current' | 'failed';
-
 /**
  * Pulls one repository's current score, translating an unreachable repository
  * into `failed` so that a single bad repository cannot abandon the batch. A
@@ -241,7 +239,7 @@ async function pullSubmissionScore(
     db: DbConnection,
     args: { token: string; org: string },
     repoName: string,
-): Promise<PullResult> {
+) {
     try {
         const { workflow_runs: runs } = await listCompletedWorkflowRuns(
             args.token,
@@ -289,7 +287,7 @@ async function pullSubmissionScore(
 export async function refreshAssignmentScores(
     db: DbConnection,
     args: { token: string; org: string; repos: string[] },
-): Promise<RefreshOutcome> {
+) {
     return await tracer.asyncSpan('refresh-assignment-scores', async (span) => {
         span.setAttributes({
             'github.org': args.org,

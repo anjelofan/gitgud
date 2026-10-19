@@ -51,7 +51,7 @@ function noScoreLabel(conclusion: string | null) {
 }
 
 /** The instructor-facing text for a summary. */
-export function scoreLabel(summary: ScoreSummary): string {
+export function scoreLabel(summary: ScoreSummary) {
     switch (summary.status) {
         case 'not-submitted':
             return 'Not submitted';
