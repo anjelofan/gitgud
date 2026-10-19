@@ -45,7 +45,7 @@ export async function POST({ request }) {
         // the ping GitHub sends when the webhook is saved.
         const body = await request.text();
         if (!verifyWebhookSignature(secret, body, request.headers.get('x-hub-signature-256'))) {
-            logger.error('github webhook delivery failed signature verification', void 0, {
+            logger.fatal('github webhook delivery failed signature verification', void 0, {
                 'github.webhook.delivery': delivery ?? 'none',
             });
             error(401, 'Invalid webhook signature.');
