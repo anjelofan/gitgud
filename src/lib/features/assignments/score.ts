@@ -1,3 +1,5 @@
+import { assertNever } from '$lib/assert';
+
 /** The submission fields the dashboard's score display is derived from. */
 export interface ScoreSource {
     repoName: string | null;
@@ -26,10 +28,6 @@ export function summarizeScore(source: ScoreSource): ScoreSummary {
         return { status: 'scored', score: source.score, maxScore: source.maxScore };
 
     return { status: 'no-score', conclusion: source.gradingConclusion };
-}
-
-function assertNever(value: never): never {
-    throw new Error(`unhandled score summary: ${JSON.stringify(value)}`);
 }
 
 /**
