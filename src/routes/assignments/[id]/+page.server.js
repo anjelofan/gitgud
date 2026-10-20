@@ -8,7 +8,7 @@ import {
 } from '$lib/features/assignments/queries.server.js';
 import { getOrgInstallationToken } from '$lib/server/github/app';
 import { Logger } from '$lib/server/telemetry/logger';
-import { refreshAssignmentScores } from '$lib/features/assignments/grading.server.js';
+import { refreshAssignmentScores } from '$lib/features/assignments/autograding.server.js';
 import { SubmittedScoreSchema } from '$lib/features/assignments/contracts';
 import { Tracer } from '$lib/server/telemetry/tracer';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseAutogradingScore } from './grading.ts';
+import { parseAutogradingScore } from './autograding.ts';
 
 describe('parseAutogradingScore', () => {
     it('reads an integer score from the GitHub Classroom marker', () => {

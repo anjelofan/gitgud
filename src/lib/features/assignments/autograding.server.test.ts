@@ -7,7 +7,7 @@ import { db } from '$lib/server/db';
 import { fakeGithub } from '$tests/fake-github/client';
 
 import { createAssignmentForProgram } from './queries.server';
-import { recordGradingRun, refreshAssignmentScores, syncSubmissionScore } from './grading.server';
+import { recordGradingRun, refreshAssignmentScores, syncSubmissionScore } from './autograding.server';
 
 const TOKEN = 'grading-access-token';
 const ORG = 'grading-org';

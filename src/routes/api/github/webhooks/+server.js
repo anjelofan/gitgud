@@ -5,7 +5,7 @@ import { db } from '$lib/server/db';
 import { env } from '$env/dynamic/private';
 import { getInstallationToken } from '$lib/server/github/app';
 import { Logger } from '$lib/server/telemetry/logger';
-import { recordGradingRun } from '$lib/features/assignments/grading.server';
+import { recordGradingRun } from '$lib/features/assignments/autograding.server';
 import { resolveSubmissionForRepo } from '$lib/features/assignments/queries.server';
 import { Tracer } from '$lib/server/telemetry/tracer';
 import { verifyWebhookSignature } from '$lib/server/github/webhook';

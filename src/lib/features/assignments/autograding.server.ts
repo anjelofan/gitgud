@@ -14,7 +14,7 @@ import {
     resolveSubmissionForRepo,
     writeGradingRunSubmission,
 } from './queries.server';
-import { parseAutogradingScore } from './grading';
+import { parseAutogradingScore } from './autograding';
 
 const SERVICE_NAME = 'assignments.grading';
 const logger = Logger.byName(SERVICE_NAME);
