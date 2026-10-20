@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 
 import { assignments, programs, rosterEntries, submissions, users } from '$lib/server/db/schema';
-import type { DbConnection } from '$lib/server/db';
+import type { DbConnection, DbTransaction } from '$lib/server/db';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
@@ -224,6 +224,29 @@ export type SubmissionLookup =
     | { status: 'missing' }
     | { status: 'ambiguous' };
 
+const submissionLookupColumns = {
+    submissionId: submissions.id,
+    assignmentId: assignments.id,
+    gradingWorkflow: assignments.gradingWorkflow,
+} as const;
+
+function submissionLookupWhere(org: string, repoName: string) {
+    return and(eq(programs.org, org), eq(submissions.repoName, repoName));
+}
+
+interface SubmissionLookupRow {
+    submissionId: string;
+    assignmentId: string;
+    gradingWorkflow: string | null;
+}
+
+function toSubmissionLookup(rows: SubmissionLookupRow[]): SubmissionLookup {
+    const [row, duplicate] = rows;
+    if (typeof row === 'undefined') return { status: 'missing' };
+    if (typeof duplicate !== 'undefined') return { status: 'ambiguous' };
+    return { status: 'found', ...row };
+}
+
 export async function resolveSubmissionForRepo(
     db: DbConnection,
     org: string,
@@ -233,21 +256,40 @@ export async function resolveSubmissionForRepo(
         span.setAttributes({ 'github.org': org, 'submission.repo_name': repoName });
 
         const rows = await db
-            .select({
-                submissionId: submissions.id,
-                assignmentId: assignments.id,
-                gradingWorkflow: assignments.gradingWorkflow,
-            })
+            .select(submissionLookupColumns)
             .from(submissions)
             .innerJoin(assignments, eq(submissions.assignmentId, assignments.id))
             .innerJoin(programs, eq(assignments.programId, programs.id))
-            .where(and(eq(programs.org, org), eq(submissions.repoName, repoName)))
+            .where(submissionLookupWhere(org, repoName))
             .limit(2);
 
-        const [row, duplicate] = rows;
-        if (typeof row === 'undefined') return { status: 'missing' };
-        if (typeof duplicate !== 'undefined') return { status: 'ambiguous' };
+        return toSubmissionLookup(rows);
+    });
+}
 
-        return { status: 'found', ...row };
+/**
+ * Resolves the submission a repository belongs to while holding a row lock on
+ * it, so a caller can decide and write against the same row without a deletion
+ * or a competing grade slipping in between. The lookup predicate is part of the
+ * locked statement, so only a row the caller may grade is ever locked.
+ */
+export async function lockSubmissionForRepo(
+    tx: DbTransaction,
+    org: string,
+    repoName: string,
+): Promise<SubmissionLookup> {
+    return await tracer.asyncSpan('lock-submission-for-repo', async (span) => {
+        span.setAttributes({ 'github.org': org, 'submission.repo_name': repoName });
+
+        const rows = await tx
+            .select(submissionLookupColumns)
+            .from(submissions)
+            .innerJoin(assignments, eq(submissions.assignmentId, assignments.id))
+            .innerJoin(programs, eq(assignments.programId, programs.id))
+            .where(submissionLookupWhere(org, repoName))
+            .limit(2)
+            .for('update');
+
+        return toSubmissionLookup(rows);
     });
 }
