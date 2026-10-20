@@ -11,8 +11,8 @@ import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 import type { WorkflowRun } from '$lib/server/github/contracts';
 
+import { lockSubmissionForRepo, resolveSubmissionForRepo } from './queries.server';
 import { parseAutogradingScore } from './grading';
-import { resolveSubmissionForRepo } from './queries.server';
 
 const SERVICE_NAME = 'assignments.grading';
 const logger = Logger.byName(SERVICE_NAME);
@@ -130,49 +130,73 @@ export async function recordGradingRun(
             args.repoName,
             args.run.checkSuiteId,
         );
-        if (score === null && lookup.gradingWorkflow !== args.run.name)
-            return { status: 'not-grading' };
 
-        const updated = await db
-            .update(submissions)
-            .set({
-                score: score === null ? null : score.score.toFixed(2),
-                maxScore: score === null ? null : score.maxScore.toFixed(2),
-                gradedAt: sql`now()`,
-                gradingRunId: args.run.id,
-                gradingConclusion: args.run.conclusion,
-                gradingHeadSha: args.run.headSha,
-            })
-            .where(
-                and(
-                    eq(submissions.id, lookup.submissionId),
-                    or(isNull(submissions.gradingRunId), lt(submissions.gradingRunId, args.run.id)),
-                ),
-            );
+        return await db.transaction(async (tx) => {
+            const locked = await lockSubmissionForRepo(tx, args.org, args.repoName);
+            if (locked.status === 'missing') {
+                logger.debug('submission vanished before its grading run was recorded', {
+                    'github.org': args.org,
+                    'submission.repo_name': args.repoName,
+                });
+                return { status: 'submission-missing' };
+            }
+            if (locked.status === 'ambiguous') {
+                logger.warn('workflow run matches more than one submission', {
+                    'github.org': args.org,
+                    'submission.repo_name': args.repoName,
+                });
+                return { status: 'submission-ambiguous' };
+            }
 
-        const { rowCount } = updated;
-        assert(rowCount !== null, 'submission update returned no row count');
-        if (rowCount === 0) return { status: 'superseded' };
+            span.setAttribute('assignment.id', locked.assignmentId);
 
-        if (score !== null && lookup.gradingWorkflow === null) {
-            await db
-                .update(assignments)
-                .set({ gradingWorkflow: args.run.name })
-                .where(eq(assignments.id, lookup.assignmentId));
-            logger.info('learned the grading workflow of an assignment', {
-                'assignment.id': lookup.assignmentId,
-                'github.workflow_run.name': args.run.name,
+            if (score === null && locked.gradingWorkflow !== args.run.name)
+                return { status: 'not-grading' };
+
+            const updated = await tx
+                .update(submissions)
+                .set({
+                    score: score === null ? null : score.score.toFixed(2),
+                    maxScore: score === null ? null : score.maxScore.toFixed(2),
+                    gradedAt: sql`now()`,
+                    gradingRunId: args.run.id,
+                    gradingConclusion: args.run.conclusion,
+                    gradingHeadSha: args.run.headSha,
+                })
+                .where(
+                    and(
+                        eq(submissions.id, locked.submissionId),
+                        or(
+                            isNull(submissions.gradingRunId),
+                            lt(submissions.gradingRunId, args.run.id),
+                        ),
+                    ),
+                );
+
+            const { rowCount } = updated;
+            assert(rowCount !== null, 'submission update returned no row count');
+            if (rowCount === 0) return { status: 'superseded' };
+
+            if (score !== null && locked.gradingWorkflow === null) {
+                await tx
+                    .update(assignments)
+                    .set({ gradingWorkflow: args.run.name })
+                    .where(eq(assignments.id, locked.assignmentId));
+                logger.info('learned the grading workflow of an assignment', {
+                    'assignment.id': locked.assignmentId,
+                    'github.workflow_run.name': args.run.name,
+                });
+            }
+
+            logger.info('recorded a grading run', {
+                'assignment.id': locked.assignmentId,
+                'submission.id': locked.submissionId,
+                'github.workflow_run.id': args.run.id,
+                'grading.conclusion': args.run.conclusion,
             });
-        }
 
-        logger.info('recorded a grading run', {
-            'assignment.id': lookup.assignmentId,
-            'submission.id': lookup.submissionId,
-            'github.workflow_run.id': args.run.id,
-            'grading.conclusion': args.run.conclusion,
+            return { status: 'recorded', score };
         });
-
-        return { status: 'recorded', score };
     });
 }
 
