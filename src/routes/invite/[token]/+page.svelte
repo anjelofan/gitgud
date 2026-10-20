@@ -55,7 +55,7 @@
     <p>{alreadyAccepted ? 'You have already accepted this assignment.' : 'Assignment accepted!'}</p>
     <p>
         Your assignment repository:
-        <a href={repoUrl} class="text-csi-blue underline">{repo?.repoName}</a>
+        <a href={repoUrl} class="text-csi-blue underline" rel="external">{repo?.repoName}</a>
     </p>
 {:else if unclaimedEntryNames.length === 0 && claimedEntryName === null}
     <p>All students are already enrolled. Please contact your instructor if you haven't.</p>
