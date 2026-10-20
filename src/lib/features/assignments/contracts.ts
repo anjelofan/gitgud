@@ -58,6 +58,7 @@ export const MaxScoreSchema = v.pipe(
     v.regex(ScorePattern, 'Max score must be a number with at most two decimal places.'),
     v.transform(Number),
     v.minValue(0.01, 'Max score must be greater than zero.'),
+    v.maxValue(99999.99, 'Max score cannot exceed 99999.99.'),
 );
 
 export const SubmittedScoreSchema = v.pipe(
@@ -66,6 +67,7 @@ export const SubmittedScoreSchema = v.pipe(
     v.regex(ScorePattern, 'Score must be a number with at most two decimal places.'),
     v.transform(Number),
     v.minValue(0, 'Score cannot be negative.'),
+    v.maxValue(99999.99, 'Score cannot exceed 99999.99.'),
 );
 
 export const CreateAssignmentInputSchema = v.pipe(
