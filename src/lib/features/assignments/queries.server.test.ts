@@ -424,7 +424,16 @@ describe('roster entry claim queries', () => {
             .set({ claimedUserId: studentId, claimedAt: new Date() })
             .where(and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, 'Alice')));
 
-        expect(await getClaimedRosterEntry(db, program.id, studentId)).toEqual({ name: 'Alice' });
+        const [claimedEntry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(and(eq(rosterEntries.programId, program.id), eq(rosterEntries.name, 'Alice')));
+        if (typeof claimedEntry === 'undefined') throw new Error('roster fixture missing');
+
+        expect(await getClaimedRosterEntry(db, program.id, studentId)).toEqual({
+            id: claimedEntry.id,
+            name: 'Alice',
+        });
         expect(await getClaimedRosterEntry(db, program.id, ownerId)).toBeNull();
     });
 });

@@ -1,7 +1,3 @@
-import assert from 'node:assert/strict';
-
-import { and, eq, isNull } from 'drizzle-orm';
-
 import {
     addCollaborator,
     createBranch,
@@ -18,9 +14,15 @@ import { getOrgInstallationToken } from '$lib/server/github/app';
 import { GithubApiError } from '$lib/server/github/client';
 import type { GitRef, PullRequest } from '$lib/server/github/contracts';
 import { Logger } from '$lib/server/telemetry/logger';
-import { rosterEntries, submissions } from '$lib/server/db/schema';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
+import {
+    claimRosterEntry,
+    getAcceptedSubmissionForUser,
+    getClaimedRosterEntry,
+    getSubmissionByRepoName,
+    recordSubmission,
+} from './queries.server';
 import { withRetries } from './retry.server';
 
 const SERVICE_NAME = 'assignments.accept';
@@ -96,94 +98,6 @@ function repoNameFor(assignmentName: string, login: string) {
     return `${safeStem}-${login}`;
 }
 
-function isUniqueViolation(error: unknown) {
-    return (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error as { code?: unknown }).code === '23505'
-    );
-}
-
-type ClaimResult = { rosterEntryId: string } | AcceptAssignmentOutcome;
-
-/**
- * Claims the roster entry named in `args.rosterEntryName` for the user, or
- * reports why it cannot be claimed.
- */
-async function claimRosterEntry(
-    db: DbConnection,
-    args: AcceptAssignmentArgs,
-    span: { setAttribute: (name: string, value: string) => void },
-): Promise<ClaimResult> {
-    if (typeof args.rosterEntryName !== 'string') return { status: 'roster-name-required' };
-
-    let claimedRows: { id: string }[];
-    try {
-        claimedRows = await db
-            .update(rosterEntries)
-            .set({ claimedUserId: args.userId, claimedAt: new Date() })
-            .where(
-                and(
-                    eq(rosterEntries.programId, args.programId),
-                    eq(rosterEntries.name, args.rosterEntryName),
-                    isNull(rosterEntries.claimedUserId),
-                ),
-            )
-            .returning({ id: rosterEntries.id });
-    } catch (error) {
-        // Two concurrent claims by the same user trip the
-        // `(programId, claimedUserId)` unique index; use whichever entry won.
-        if (!isUniqueViolation(error)) throw error;
-
-        const winners = await db
-            .select({ id: rosterEntries.id })
-            .from(rosterEntries)
-            .where(
-                and(
-                    eq(rosterEntries.programId, args.programId),
-                    eq(rosterEntries.claimedUserId, args.userId),
-                ),
-            )
-            .limit(1);
-        assert.ok(typeof winners[0] !== 'undefined');
-        claimedRows = [winners[0]];
-    }
-    const [claimedRow] = claimedRows;
-
-    if (typeof claimedRow === 'undefined') {
-        const [existing] = await db
-            .select({ id: rosterEntries.id, claimedUserId: rosterEntries.claimedUserId })
-            .from(rosterEntries)
-            .where(
-                and(
-                    eq(rosterEntries.programId, args.programId),
-                    eq(rosterEntries.name, args.rosterEntryName),
-                ),
-            )
-            .limit(1);
-
-        if (typeof existing !== 'undefined') {
-            // The user's own concurrent request may have claimed this entry
-            // between our conditional UPDATE and this lookup; treat that as
-            // success rather than a conflict.
-            if (existing.claimedUserId === args.userId) {
-                span.setAttribute('submission.roster_entry_id', existing.id);
-                return { rosterEntryId: existing.id };
-            }
-            return { status: 'entry-claimed' };
-        }
-
-        logger.debug('roster entry not found for the given name', {
-            'program.id': args.programId,
-        });
-        return { status: 'entry-missing' };
-    }
-
-    span.setAttribute('submission.roster_entry_id', claimedRow.id);
-    return { rosterEntryId: claimedRow.id };
-}
-
 /**
  * Accepts an assignment for the given student: claims a roster entry on the
  * first accept, then creates the assignment repo from its template (with a
@@ -200,37 +114,28 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             'github.org': args.org,
         });
 
-        const [claimedEntry] = await db
-            .select({ id: rosterEntries.id, name: rosterEntries.name })
-            .from(rosterEntries)
-            .where(
-                and(
-                    eq(rosterEntries.programId, args.programId),
-                    eq(rosterEntries.claimedUserId, args.userId),
-                ),
-            )
-            .limit(1);
+        const claimedEntry = await getClaimedRosterEntry(db, args.programId, args.userId);
 
         let rosterEntryId: string;
-        if (typeof claimedEntry === 'undefined') {
-            const claim = await claimRosterEntry(db, args, span);
+        if (claimedEntry === null) {
+            if (typeof args.rosterEntryName !== 'string') return { status: 'roster-name-required' };
+            const claim = await claimRosterEntry(db, {
+                programId: args.programId,
+                userId: args.userId,
+                entryName: args.rosterEntryName,
+            });
             if ('status' in claim) return claim;
             ({ rosterEntryId } = claim);
         } else {
             rosterEntryId = claimedEntry.id;
         }
 
-        const [existingSubmission] = await db
-            .select({ repoName: submissions.repoName })
-            .from(submissions)
-            .where(
-                and(
-                    eq(submissions.assignmentId, args.assignmentId),
-                    eq(submissions.rosterEntryId, rosterEntryId),
-                ),
-            )
-            .limit(1);
-        if (typeof existingSubmission !== 'undefined') {
+        const existingSubmission = await getAcceptedSubmissionForUser(
+            db,
+            args.assignmentId,
+            args.userId,
+        );
+        if (existingSubmission !== null) {
             logger.info('assignment already accepted', { 'assignment.id': args.assignmentId });
             return { status: 'already-accepted', repoName: existingSubmission.repoName } as const;
         }
@@ -264,17 +169,12 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
                     // deterministic name. Only adopt it when this assignment
                     // has a recorded submission with that name; otherwise an
                     // unrelated repo is squatting on the name.
-                    const [provenance] = await db
-                        .select({ repoName: submissions.repoName })
-                        .from(submissions)
-                        .where(
-                            and(
-                                eq(submissions.assignmentId, args.assignmentId),
-                                eq(submissions.repoName, repoName),
-                            ),
-                        )
-                        .limit(1);
-                    if (typeof provenance === 'undefined') {
+                    const provenance = await getSubmissionByRepoName(
+                        db,
+                        args.assignmentId,
+                        repoName,
+                    );
+                    if (provenance === null) {
                         logger.error(
                             'assignment repo name collides with an unrelated repository',
                             error,
@@ -304,10 +204,7 @@ export async function acceptAssignment(db: DbConnection, args: AcceptAssignmentA
             }
         }
 
-        await db
-            .insert(submissions)
-            .values({ assignmentId: args.assignmentId, rosterEntryId, repoName })
-            .onConflictDoNothing();
+        await recordSubmission(db, args.assignmentId, rosterEntryId, repoName);
 
         let head: GitRef;
         try {

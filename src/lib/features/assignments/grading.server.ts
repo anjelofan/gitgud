@@ -1,9 +1,4 @@
-import assert from 'node:assert/strict';
-
-import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
-
 import { assertNever } from '$lib/assert';
-import { assignments, submissions } from '$lib/server/db/schema';
 import type { DbConnection } from '$lib/server/db';
 import { listCheckRunAnnotations, listCheckSuiteCheckRuns } from '$lib/server/github/checks';
 import { listCompletedWorkflowRuns } from '$lib/server/github/actions';
@@ -11,26 +6,19 @@ import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 import type { WorkflowRun } from '$lib/server/github/contracts';
 
-import { lockSubmissionForRepo, resolveSubmissionForRepo } from './queries.server';
+import {
+    type GradingRun,
+    type GradingRunScore,
+    learnGradingWorkflow,
+    lockSubmissionForRepo,
+    resolveSubmissionForRepo,
+    writeGradingRunSubmission,
+} from './queries.server';
 import { parseAutogradingScore } from './grading';
 
 const SERVICE_NAME = 'assignments.grading';
 const logger = Logger.byName(SERVICE_NAME);
 const tracer = Tracer.byName(SERVICE_NAME);
-
-/** A completed workflow run, in the shape both the webhook and the polling path see it. */
-export interface GradingRun {
-    id: number;
-    name: string;
-    checkSuiteId: number;
-    headSha: string;
-    conclusion: string | null;
-}
-
-export interface GradingRunScore {
-    score: number;
-    maxScore: number;
-}
 
 export type RecordGradingOutcome =
     | { status: 'recorded'; score: GradingRunScore | null }
@@ -162,46 +150,20 @@ export async function recordGradingRun(
 
             span.setAttribute('assignment.id', locked.assignmentId);
 
-            if (locked.gradingMode === 'manual')
-                return { status: 'manual-assignment' };
+            if (locked.gradingMode === 'manual') return { status: 'manual-assignment' };
 
             if (score === null && locked.gradingWorkflow !== args.run.name)
                 return { status: 'not-grading' };
 
-            const updated = await tx
-                .update(submissions)
-                .set({
-                    score: score === null ? null : score.score.toFixed(2),
-                    maxScore: score === null ? null : score.maxScore.toFixed(2),
-                    gradedAt: sql`now()`,
-                    gradingRunId: args.run.id,
-                    gradingConclusion: args.run.conclusion,
-                    gradingHeadSha: args.run.headSha,
-                })
-                .where(
-                    and(
-                        eq(submissions.id, locked.submissionId),
-                        or(
-                            isNull(submissions.gradingRunId),
-                            lt(submissions.gradingRunId, args.run.id),
-                        ),
-                    ),
-                );
+            const recorded = await writeGradingRunSubmission(tx, {
+                submissionId: locked.submissionId,
+                run: args.run,
+                score,
+            });
+            if (!recorded) return { status: 'superseded' };
 
-            const { rowCount } = updated;
-            assert(rowCount !== null, 'submission update returned no row count');
-            if (rowCount === 0) return { status: 'superseded' };
-
-            if (score !== null && locked.gradingWorkflow === null) {
-                await tx
-                    .update(assignments)
-                    .set({ gradingWorkflow: args.run.name })
-                    .where(eq(assignments.id, locked.assignmentId));
-                logger.info('learned the grading workflow of an assignment', {
-                    'assignment.id': locked.assignmentId,
-                    'github.workflow_run.name': args.run.name,
-                });
-            }
+            if (score !== null && locked.gradingWorkflow === null)
+                await learnGradingWorkflow(tx, locked.assignmentId, args.run.name);
 
             logger.info('recorded a grading run', {
                 'assignment.id': locked.assignmentId,

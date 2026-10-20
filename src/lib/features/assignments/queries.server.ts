@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
 
 import { assignments, programs, rosterEntries, submissions, users } from '$lib/server/db/schema';
 import type { DbConnection, DbTransaction } from '$lib/server/db';
@@ -200,7 +200,7 @@ export async function getClaimedRosterEntry(db: DbConnection, programId: string,
         span.setAttributes({ 'program.id': programId, 'user.id': userId });
 
         const [entry] = await db
-            .select({ name: rosterEntries.name })
+            .select({ id: rosterEntries.id, name: rosterEntries.name })
             .from(rosterEntries)
             .where(
                 and(
@@ -330,5 +330,212 @@ export async function setSubmissionScore(
                 and(eq(submissions.id, submissionId), eq(submissions.assignmentId, assignmentId)),
             )
             .returning({ id: submissions.id });
+    });
+}
+
+/** A completed workflow run, in the shape both the webhook and the polling path see it. */
+export interface GradingRun {
+    id: number;
+    name: string;
+    checkSuiteId: number;
+    headSha: string;
+    conclusion: string | null;
+}
+
+export interface GradingRunScore {
+    score: number;
+    maxScore: number;
+}
+
+export type ClaimRosterEntryOutcome =
+    { rosterEntryId: string } | { status: 'entry-missing' | 'entry-claimed' };
+
+function isUniqueViolation(error: unknown) {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: unknown }).code === '23505'
+    );
+}
+
+/**
+ * Claims the named roster entry for the user. The conditional UPDATE is what
+ * makes the claim atomic: an entry another student claimed first matches no
+ * row, and the follow-up lookup says whether the name exists at all.
+ */
+export async function claimRosterEntry(
+    db: DbConnection,
+    args: { programId: string; userId: string; entryName: string },
+): Promise<ClaimRosterEntryOutcome> {
+    return await tracer.asyncSpan('claim-roster-entry', async (span) => {
+        span.setAttributes({ 'program.id': args.programId, 'user.id': args.userId });
+
+        let claimedRows: { id: string }[];
+        try {
+            claimedRows = await db
+                .update(rosterEntries)
+                .set({ claimedUserId: args.userId, claimedAt: new Date() })
+                .where(
+                    and(
+                        eq(rosterEntries.programId, args.programId),
+                        eq(rosterEntries.name, args.entryName),
+                        isNull(rosterEntries.claimedUserId),
+                    ),
+                )
+                .returning({ id: rosterEntries.id });
+        } catch (error) {
+            // Two concurrent claims by the same user trip the
+            // `(programId, claimedUserId)` unique index; use whichever entry won.
+            if (!isUniqueViolation(error)) throw error;
+
+            const winners = await db
+                .select({ id: rosterEntries.id })
+                .from(rosterEntries)
+                .where(
+                    and(
+                        eq(rosterEntries.programId, args.programId),
+                        eq(rosterEntries.claimedUserId, args.userId),
+                    ),
+                )
+                .limit(1);
+            const [winner] = winners;
+            assert(typeof winner !== 'undefined', 'concurrent claim left no winning entry');
+            claimedRows = [winner];
+        }
+        const [claimedRow] = claimedRows;
+
+        if (typeof claimedRow === 'undefined') {
+            const [existing] = await db
+                .select({ id: rosterEntries.id, claimedUserId: rosterEntries.claimedUserId })
+                .from(rosterEntries)
+                .where(
+                    and(
+                        eq(rosterEntries.programId, args.programId),
+                        eq(rosterEntries.name, args.entryName),
+                    ),
+                )
+                .limit(1);
+
+            if (typeof existing !== 'undefined') {
+                // The user's own concurrent request may have claimed this entry
+                // between our conditional UPDATE and this lookup; treat that as
+                // success rather than a conflict.
+                if (existing.claimedUserId === args.userId) {
+                    span.setAttribute('roster.entry_id', existing.id);
+                    return { rosterEntryId: existing.id };
+                }
+                return { status: 'entry-claimed' };
+            }
+
+            logger.debug('roster entry not found for the given name', {
+                'program.id': args.programId,
+            });
+            return { status: 'entry-missing' };
+        }
+
+        span.setAttribute('roster.entry_id', claimedRow.id);
+        return { rosterEntryId: claimedRow.id };
+    });
+}
+
+/** Reads the submission recorded for an assignment and repository name, if any. */
+export async function getSubmissionByRepoName(
+    db: DbConnection,
+    assignmentId: string,
+    repoName: string,
+) {
+    return await tracer.asyncSpan('get-submission-by-repo-name', async (span) => {
+        span.setAttributes({ 'assignment.id': assignmentId, 'submission.repo_name': repoName });
+
+        const [submission] = await db
+            .select({ repoName: submissions.repoName })
+            .from(submissions)
+            .where(
+                and(eq(submissions.assignmentId, assignmentId), eq(submissions.repoName, repoName)),
+            )
+            .limit(1);
+        if (typeof submission === 'undefined') return null;
+
+        return submission;
+    });
+}
+
+/** Records the submission a student's accepted assignment created. */
+export async function recordSubmission(
+    db: DbConnection,
+    assignmentId: string,
+    rosterEntryId: string,
+    repoName: string,
+) {
+    return await tracer.asyncSpan('record-submission', async (span) => {
+        span.setAttributes({
+            'assignment.id': assignmentId,
+            'submission.roster_entry_id': rosterEntryId,
+            'submission.repo_name': repoName,
+        });
+
+        await db
+            .insert(submissions)
+            .values({ assignmentId, rosterEntryId, repoName })
+            .onConflictDoNothing();
+    });
+}
+
+/**
+ * Writes one completed run's grade, guarded by the monotonic run id so a
+ * redelivered or out-of-order delivery cannot overwrite a newer grade. Returns
+ * whether the row was written; a locked, existing submission that matches no
+ * row means an equal-or-newer run is already stored.
+ */
+export async function writeGradingRunSubmission(
+    tx: DbTransaction,
+    args: { submissionId: string; run: GradingRun; score: GradingRunScore | null },
+) {
+    return await tracer.asyncSpan('write-grading-run-submission', async (span) => {
+        span.setAttributes({
+            'submission.id': args.submissionId,
+            'github.workflow_run.id': args.run.id,
+        });
+
+        const updated = await tx
+            .update(submissions)
+            .set({
+                score: args.score === null ? null : args.score.score.toFixed(2),
+                maxScore: args.score === null ? null : args.score.maxScore.toFixed(2),
+                gradedAt: sql`now()`,
+                gradingRunId: args.run.id,
+                gradingConclusion: args.run.conclusion,
+                gradingHeadSha: args.run.headSha,
+            })
+            .where(
+                and(
+                    eq(submissions.id, args.submissionId),
+                    or(isNull(submissions.gradingRunId), lt(submissions.gradingRunId, args.run.id)),
+                ),
+            );
+
+        const { rowCount } = updated;
+        assert(rowCount !== null, 'submission update returned no row count');
+        return rowCount > 0;
+    });
+}
+
+/** Learns the assignment's grading workflow from the first run that reported a score. */
+export async function learnGradingWorkflow(
+    tx: DbTransaction,
+    assignmentId: string,
+    workflowName: string,
+) {
+    return await tracer.asyncSpan('learn-grading-workflow', async (span) => {
+        span.setAttributes({
+            'assignment.id': assignmentId,
+            'github.workflow_run.name': workflowName,
+        });
+
+        await tx
+            .update(assignments)
+            .set({ gradingWorkflow: workflowName })
+            .where(eq(assignments.id, assignmentId));
     });
 }
