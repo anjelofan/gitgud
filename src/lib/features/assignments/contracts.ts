@@ -44,11 +44,60 @@ export const TemplateRepoSchema = v.pipe(
     v.maxLength(TEMPLATE_REPO_MAX_LENGTH, 'Repository name must be at most 100 characters long.'),
 );
 
-export const CreateAssignmentInputSchema = v.object({
-    name: AssignmentNameSchema,
-    deadline: DeadlineSchema,
-    templateRepo: TemplateRepoSchema,
-});
+/** How an assignment's scores are produced. */
+export const GRADING_MODES = ['autograding', 'manual'] as const;
+export const GradingModeSchema = v.picklist(GRADING_MODES);
+export type GradingMode = v.InferOutput<typeof GradingModeSchema>;
+
+/** A non-negative amount with at most two decimal places, as submitted by a form. */
+export const ScorePattern = /^\d+(?:\.\d{1,2})?$/u;
+
+export const MaxScoreSchema = v.pipe(
+    v.string(),
+    v.trim(),
+    v.regex(ScorePattern, 'Max score must be a number with at most two decimal places.'),
+    v.transform(Number),
+    v.minValue(0.01, 'Max score must be greater than zero.'),
+);
+
+export const SubmittedScoreSchema = v.pipe(
+    v.string(),
+    v.trim(),
+    v.regex(ScorePattern, 'Score must be a number with at most two decimal places.'),
+    v.transform(Number),
+    v.minValue(0, 'Score cannot be negative.'),
+);
+
+export const CreateAssignmentInputSchema = v.pipe(
+    v.object({
+        name: AssignmentNameSchema,
+        deadline: DeadlineSchema,
+        templateRepo: TemplateRepoSchema,
+        gradingMode: GradingModeSchema,
+        maxScore: v.optional(v.string(), ''),
+    }),
+    v.check(
+        (input) => input.gradingMode === 'manual' || input.maxScore.trim() === '',
+        'Max score only applies to manual grading.',
+    ),
+    v.check(
+        (input) => input.gradingMode !== 'manual' || input.maxScore.trim() !== '',
+        'Max score is required for manual grading.',
+    ),
+    v.check(
+        (input) =>
+            input.gradingMode !== 'manual' || v.safeParse(MaxScoreSchema, input.maxScore).success,
+        'Max score must be a positive number with at most two decimal places.',
+    ),
+    v.transform((input) => ({
+        name: input.name,
+        deadline: input.deadline,
+        templateRepo: input.templateRepo,
+        gradingMode: input.gradingMode,
+        // Absence, not a fabricated value, is what an autograded assignment carries.
+        ...(input.gradingMode === 'manual' ? { maxScore: Number(input.maxScore.trim()) } : {}),
+    })),
+);
 
 export type CreateAssignmentInput = v.InferOutput<typeof CreateAssignmentInputSchema>;
 

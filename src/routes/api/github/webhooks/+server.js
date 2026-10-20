@@ -82,6 +82,17 @@ export async function POST({ request }) {
             return accepted();
         }
 
+        // A manually graded assignment never takes its score from a workflow run,
+        // so stop before minting a token or reading any check suite.
+        if (lookup.gradingMode === 'manual') {
+            span.setAttribute('github.webhook.outcome', 'ignored-manual');
+            logger.debug('workflow run belongs to a manually graded assignment', {
+                'github.org': org,
+                'submission.repo_name': repoName,
+            });
+            return accepted();
+        }
+
         const outcome = await recordGradingRun(db, {
             token: await getInstallationToken(payload.installation.id),
             org,

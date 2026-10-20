@@ -180,7 +180,10 @@ beforeEach(async () => {
 });
 
 /** Creates a program whose single roster entry holds a submission for `repoName`. */
-async function submissionFixture(repoName: string) {
+async function submissionFixture(
+    repoName: string,
+    grading: { mode: 'manual'; maxScore: number } | null = null,
+) {
     const [instructor] = await db
         .select({ id: users.id })
         .from(users)
@@ -199,6 +202,8 @@ async function submissionFixture(repoName: string) {
         name: 'Graded Assignment',
         deadline: new Date('2026-09-15T18:00:00.000Z'),
         templateRepo: 'grading-template',
+        gradingMode: grading?.mode ?? 'autograding',
+        maxScore: grading?.maxScore,
     });
     if (assignment === null) throw new Error('assignment fixture missing');
 
@@ -356,6 +361,27 @@ describe('recordGradingRun', () => {
             }),
         ).toEqual({ status: 'submission-missing' });
     });
+
+    it('ignores an autograded run for a manually graded assignment', async () => {
+        const { submission } = await submissionFixture('graded-repo', {
+            mode: 'manual',
+            maxScore: 10,
+        });
+
+        expect(
+            await recordGradingRun(db, {
+                token: TOKEN,
+                org: ORG,
+                repoName: 'graded-repo',
+                run: SCORED_RUN,
+            }),
+        ).toEqual({ status: 'manual-assignment' });
+
+        const stored = await storedSubmission(submission.id);
+        expect(stored.score).toBeNull();
+        expect(stored.gradedAt).toBeNull();
+        expect(stored.gradingRunId).toBeNull();
+    });
 });
 
 describe('syncSubmissionScore', () => {
@@ -493,5 +519,28 @@ describe('refreshAssignmentScores', () => {
         const stored = await storedSubmission(submission.id);
         expect(stored.gradingRunId).toBeNull();
         expect(stored.gradedAt).toBeNull();
+    });
+
+    it('never records an autograded score for a manually graded assignment', async () => {
+        const { submission } = await submissionFixture('graded-repo', {
+            mode: 'manual',
+            maxScore: 10,
+        });
+
+        const outcome = await refreshAssignmentScores(db, {
+            token: TOKEN,
+            org: ORG,
+            repos: ['graded-repo'],
+        });
+
+        expect(outcome).toEqual({
+            submitted: 1,
+            recorded: 0,
+            current: 0,
+            noScoreFound: 1,
+            failed: 0,
+        });
+        const stored = await storedSubmission(submission.id);
+        expect(stored.score).toBeNull();
     });
 });

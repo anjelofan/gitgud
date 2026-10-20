@@ -41,7 +41,13 @@ const logger = Logger.byName(SERVICE_NAME);
 const tracer = Tracer.byName(SERVICE_NAME);
 
 const ProgramIdSchema = v.pipe(v.string(), v.uuid());
-const EMPTY_ASSIGNMENT_DATA = { name: '', deadline: '', templateRepo: '' };
+const EMPTY_ASSIGNMENT_DATA = {
+    name: '',
+    deadline: '',
+    templateRepo: '',
+    gradingMode: 'autograding',
+    maxScore: '',
+};
 const EMPTY_ROSTER_DATA = { addName: '', rosterText: '', renameEntryId: '', renameName: '' };
 
 /** @param {number} status @param {Record<string, unknown>} payload */

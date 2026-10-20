@@ -36,6 +36,13 @@
             "when": 1791207790200,
             "tag": "0004_add-grading-columns",
             "breakpoints": true
+        },
+        {
+            "idx": 5,
+            "version": "7",
+            "when": 1792415308660,
+            "tag": "0005_add-grading-mode",
+            "breakpoints": true
         }
     ]
 }

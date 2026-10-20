@@ -2,10 +2,14 @@ import * as v from 'valibot';
 import { error, fail, redirect } from '@sveltejs/kit';
 
 import { db } from '$lib/server/db';
-import { getAssignmentForInstructor } from '$lib/features/assignments/queries.server.js';
+import {
+    getAssignmentForInstructor,
+    setSubmissionScore,
+} from '$lib/features/assignments/queries.server.js';
 import { getOrgInstallationToken } from '$lib/server/github/app';
 import { Logger } from '$lib/server/telemetry/logger';
 import { refreshAssignmentScores } from '$lib/features/assignments/grading.server.js';
+import { SubmittedScoreSchema } from '$lib/features/assignments/contracts';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
 const SERVICE_NAME = 'routes.assignments.id';
@@ -13,6 +17,7 @@ const logger = Logger.byName(SERVICE_NAME);
 const tracer = Tracer.byName(SERVICE_NAME);
 
 const AssignmentIdSchema = v.pipe(v.string(), v.uuid());
+const SubmissionIdSchema = v.pipe(v.string(), v.uuid());
 
 export async function load({ locals: { session }, params }) {
     return await tracer.asyncSpan('load-assignment-dashboard', async (span) => {
@@ -44,10 +49,11 @@ export async function load({ locals: { session }, params }) {
             error(404, 'assignment not found');
         }
 
-        const { name, deadline, inviteToken, templateRepo, programId } = result.assignment;
+        const { name, deadline, inviteToken, templateRepo, gradingMode, maxScore, programId } =
+            result.assignment;
         const { name: programName, org } = result.program;
         return {
-            assignment: { name, deadline, inviteToken, templateRepo },
+            assignment: { name, deadline, inviteToken, templateRepo, gradingMode, maxScore },
             program: { name: programName, id: programId, org },
             students: result.students,
         };
@@ -123,6 +129,121 @@ export const actions = {
             });
 
             return { refresh: { ok: true, ...refresh } };
+        });
+    },
+
+    async 'set-score'({ locals: { session }, params, request }) {
+        return await tracer.asyncSpan('set-score-action', async (span) => {
+            if (session === null) {
+                logger.fatal('unauthenticated score entry attempt');
+                return fail(401, {
+                    setScore: { ok: false, message: 'You must be signed in.' },
+                });
+            }
+            span.setAttribute('user.id', session.user.id);
+
+            const assignmentId = v.safeParse(AssignmentIdSchema, params.id);
+            if (!assignmentId.success) {
+                logger.fatal(
+                    'malformed assignment id in set-score action',
+                    new v.ValiError(assignmentId.issues),
+                    { 'user.id': session.user.id },
+                );
+                return fail(400, {
+                    setScore: { ok: false, message: 'Malformed assignment id' },
+                });
+            }
+            span.setAttribute('assignment.id', assignmentId.output);
+
+            const form = await request.formData();
+            const submissionId = v.safeParse(SubmissionIdSchema, form.get('submissionId'));
+            const score = v.safeParse(SubmittedScoreSchema, form.get('score'));
+            if (!submissionId.success || !score.success) {
+                logger.fatal('invalid manual score input', void 0, {
+                    'user.id': session.user.id,
+                    'assignment.id': assignmentId.output,
+                });
+                return fail(422, {
+                    setScore: {
+                        ok: false,
+                        message: 'Enter a score with at most two decimal places.',
+                    },
+                });
+            }
+
+            const result = await getAssignmentForInstructor(
+                db,
+                assignmentId.output,
+                session.user.id,
+            );
+            if (result === null) {
+                logger.fatal('instructor does not own the assignment to score', void 0, {
+                    'user.id': session.user.id,
+                    'assignment.id': assignmentId.output,
+                });
+                return fail(404, {
+                    setScore: { ok: false, message: 'Assignment not found' },
+                });
+            }
+
+            if (result.assignment.gradingMode !== 'manual') {
+                logger.fatal('manual score entry for an autograded assignment', void 0, {
+                    'user.id': session.user.id,
+                    'assignment.id': assignmentId.output,
+                });
+                return fail(409, {
+                    setScore: {
+                        ok: false,
+                        message: 'This assignment is graded by autograding.',
+                    },
+                });
+            }
+
+            const { maxScore } = result.assignment;
+            if (maxScore === null) {
+                logger.fatal('manual assignment has no maximum score configured', void 0, {
+                    'user.id': session.user.id,
+                    'assignment.id': assignmentId.output,
+                });
+                return fail(500, {
+                    setScore: {
+                        ok: false,
+                        message: 'This assignment has no maximum score configured.',
+                    },
+                });
+            }
+
+            const updated = await setSubmissionScore(
+                db,
+                submissionId.output,
+                assignmentId.output,
+                score.output.toFixed(2),
+                maxScore,
+            );
+            if (updated.length === 0) {
+                logger.fatal('submission to score does not belong to the assignment', void 0, {
+                    'user.id': session.user.id,
+                    'assignment.id': assignmentId.output,
+                });
+                return fail(404, {
+                    setScore: { ok: false, message: 'Submission not found' },
+                });
+            }
+
+            logger.info('manual score recorded', {
+                'assignment.id': assignmentId.output,
+                'user.id': session.user.id,
+                'submission.id': submissionId.output,
+            });
+
+            return {
+                setScore: {
+                    ok: true,
+                    submissionId: submissionId.output,
+                    score: score.output.toFixed(2),
+                    maxScore,
+                },
+            };
         });
     },
 };

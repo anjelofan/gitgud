@@ -36,6 +36,7 @@ export type RecordGradingOutcome =
     | { status: 'recorded'; score: GradingRunScore | null }
     | { status: 'superseded' }
     | { status: 'not-grading' }
+    | { status: 'manual-assignment' }
     | { status: 'submission-missing' }
     | { status: 'submission-ambiguous' };
 
@@ -93,6 +94,11 @@ async function readGradingRunScore(
  * failing autograding run supersede an earlier passing one instead of being
  * mistaken for an unrelated workflow. The stored run id is monotonic, so a
  * redelivered or late webhook cannot overwrite a newer grade.
+ *
+ * The score is read before the write transaction so no row lock is held across
+ * GitHub calls; the submission is then locked and re-resolved inside the
+ * transaction, so `superseded` always means a newer run is stored rather than a
+ * submission that vanished mid-flight.
  */
 export async function recordGradingRun(
     db: DbConnection,
@@ -122,7 +128,13 @@ export async function recordGradingRun(
             return { status: 'submission-ambiguous' };
         }
 
-        span.setAttribute('assignment.id', lookup.assignmentId);
+        if (lookup.gradingMode === 'manual') {
+            logger.debug('assignment is graded manually; ignoring an autograded run', {
+                'assignment.id': lookup.assignmentId,
+                'github.workflow_run.id': args.run.id,
+            });
+            return { status: 'manual-assignment' };
+        }
 
         const score = await readGradingRunScore(
             args.token,
@@ -149,6 +161,9 @@ export async function recordGradingRun(
             }
 
             span.setAttribute('assignment.id', locked.assignmentId);
+
+            if (locked.gradingMode === 'manual')
+                return { status: 'manual-assignment' };
 
             if (score === null && locked.gradingWorkflow !== args.run.name)
                 return { status: 'not-grading' };
@@ -283,6 +298,7 @@ async function pullSubmissionScore(
             case 'superseded':
                 return 'current';
             case 'not-grading':
+            case 'manual-assignment':
             case 'no-grading-run':
                 return 'no-score-found';
             case 'submission-missing':

@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { fakeGithub } from '$tests/fake-github/client';
 
-import { templateRepoStatus } from './form.server.ts';
+import { decodeCreateAssignmentForm, templateRepoStatus } from './form.server.ts';
 
 const TOKEN = 'form-access-token';
 
@@ -14,6 +14,32 @@ beforeAll(async () => {
         org: 'form-fail-org',
         repo: 'tpl-repo',
         status: 500,
+    });
+});
+
+describe('decodeCreateAssignmentForm', () => {
+    it('decodes a present manual grading checkbox as manual grading', () => {
+        const formData = new FormData();
+        formData.set('gradingMode', 'on');
+        formData.set('maxScore', '12.5');
+
+        expect(decodeCreateAssignmentForm(formData)).toEqual({
+            name: '',
+            deadline: '',
+            templateRepo: '',
+            gradingMode: 'manual',
+            maxScore: '12.5',
+        });
+    });
+
+    it('decodes an absent grading checkbox as autograding', () => {
+        expect(decodeCreateAssignmentForm(new FormData())).toEqual({
+            name: '',
+            deadline: '',
+            templateRepo: '',
+            gradingMode: 'autograding',
+            maxScore: '',
+        });
     });
 });
 

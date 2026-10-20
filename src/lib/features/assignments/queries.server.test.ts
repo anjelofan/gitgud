@@ -14,6 +14,7 @@ import {
     listAssignmentsForProgram,
     listUnclaimedRosterEntries,
     resolveSubmissionForRepo,
+    setSubmissionScore,
 } from './queries.server.ts';
 
 const INSTRUCTOR = { githubId: 201, login: 'assignments-instructor', avatar_url: null };
@@ -47,6 +48,7 @@ describe('createAssignmentForProgram', () => {
             name: 'DTP Assignment #0',
             deadline,
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(assignment).not.toBeNull();
         if (assignment === null) return;
@@ -56,6 +58,28 @@ describe('createAssignmentForProgram', () => {
         expect(assignment.deadline.toISOString()).toBe(deadline.toISOString());
         expect(assignment.templateRepo).toBe('dtp2627a-0');
         expect(assignment.inviteToken.length).toBeGreaterThan(0);
+        expect(assignment.gradingMode).toBe('autograding');
+        expect(assignment.maxScore).toBeNull();
+    });
+
+    it('stores a manual grading mode with its maximum score', async () => {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const program = await ownedProgram(INSTRUCTOR.login);
+
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId: program.id,
+            name: 'Manual Assignment',
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'dtp2627a-0',
+            gradingMode: 'manual',
+            maxScore: 12.5,
+        });
+        expect(assignment).not.toBeNull();
+        if (assignment === null) return;
+
+        expect(assignment.gradingMode).toBe('manual');
+        expect(assignment.maxScore).toBe('12.50');
     });
 
     it('returns null when the program belongs to another instructor', async () => {
@@ -69,6 +93,7 @@ describe('createAssignmentForProgram', () => {
                 name: 'Not DTP Assignment #0',
                 deadline: new Date('2026-09-15T18:00:00.000Z'),
                 templateRepo: 'dtp2627a-0',
+                gradingMode: 'autograding',
             }),
         ).toBeNull();
     });
@@ -84,6 +109,7 @@ describe('createAssignmentForProgram', () => {
                 name: 'Ghost Assignment',
                 deadline: new Date('2026-09-15T18:00:00.000Z'),
                 templateRepo: 'dtp2627a-0',
+                gradingMode: 'autograding',
             }),
         ).toBeNull();
     });
@@ -100,6 +126,7 @@ describe('listAssignmentsForProgram', () => {
             name: 'Earlier Due',
             deadline: new Date('2026-01-01T00:00:00.000Z'),
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         await createAssignmentForProgram(db, {
             instructorId: ownerId,
@@ -107,6 +134,7 @@ describe('listAssignmentsForProgram', () => {
             name: 'Later Due',
             deadline: new Date('2027-01-01T00:00:00.000Z'),
             templateRepo: 'dtp2627a-1',
+            gradingMode: 'autograding',
         });
 
         const listed = await listAssignmentsForProgram(db, program.id);
@@ -124,6 +152,7 @@ describe('listAssignmentsForProgram', () => {
             name: 'Listed',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         await createAssignmentForProgram(db, {
             instructorId: ownerId,
@@ -131,6 +160,7 @@ describe('listAssignmentsForProgram', () => {
             name: 'Not Listed',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
 
         const listed = await listAssignmentsForProgram(db, firstProgram.id);
@@ -163,6 +193,7 @@ describe('getAssignmentForInstructor', () => {
             name: 'Dashboard Assignment',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'dashboard-template',
+            gradingMode: 'autograding',
         });
         expect(assignment).not.toBeNull();
         if (assignment === null) return;
@@ -176,11 +207,15 @@ describe('getAssignmentForInstructor', () => {
             .update(rosterEntries)
             .set({ claimedUserId: student.id, claimedAt: new Date() })
             .where(eq(rosterEntries.id, alice.id));
-        await db.insert(submissions).values({
-            assignmentId: assignment.id,
-            rosterEntryId: alice.id,
-            repoName: 'dashboard-assignment-student-cat',
-        });
+        const [aliceSubmission] = await db
+            .insert(submissions)
+            .values({
+                assignmentId: assignment.id,
+                rosterEntryId: alice.id,
+                repoName: 'dashboard-assignment-student-cat',
+            })
+            .returning({ id: submissions.id });
+        if (typeof aliceSubmission === 'undefined') throw new Error('submission fixture missing');
 
         const stored = await getAssignmentForInstructor(db, assignment.id, ownerId);
         expect(stored).not.toBeNull();
@@ -188,6 +223,7 @@ describe('getAssignmentForInstructor', () => {
 
         expect(stored.students.sort((left, right) => left.name.localeCompare(right.name))).toEqual([
             {
+                submissionId: aliceSubmission.id,
                 name: 'Alice',
                 login: 'student-cat',
                 avatarUrl: 'https://avatars.example/student-cat.png',
@@ -198,6 +234,7 @@ describe('getAssignmentForInstructor', () => {
                 gradingConclusion: null,
             },
             {
+                submissionId: null,
                 name: 'Bob',
                 login: null,
                 avatarUrl: null,
@@ -224,6 +261,7 @@ describe('getAssignmentForInstructor', () => {
             name: 'First Assignment',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'template',
+            gradingMode: 'autograding',
         });
         const second = await createAssignmentForProgram(db, {
             instructorId: ownerId,
@@ -231,6 +269,7 @@ describe('getAssignmentForInstructor', () => {
             name: 'Second Assignment',
             deadline: new Date('2026-09-16T18:00:00.000Z'),
             templateRepo: 'template',
+            gradingMode: 'autograding',
         });
         expect(first).not.toBeNull();
         expect(second).not.toBeNull();
@@ -252,6 +291,7 @@ describe('getAssignmentForInstructor', () => {
         if (stored === null) return;
         expect(stored.students).toEqual([
             {
+                submissionId: null,
                 name: 'Alice',
                 login: null,
                 avatarUrl: null,
@@ -274,6 +314,7 @@ describe('getAssignmentForInstructor', () => {
             name: 'DTP Assignment #0',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(assignment).not.toBeNull();
         if (assignment === null) return;
@@ -298,6 +339,7 @@ describe('getAssignmentForInstructor', () => {
             name: 'Not Owned',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(assignment).not.toBeNull();
         if (assignment === null) return;
@@ -324,6 +366,7 @@ describe('getAssignmentByInviteToken', () => {
             name: 'Invite Assignment',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(assignment).not.toBeNull();
         if (assignment === null) return;
@@ -402,6 +445,7 @@ describe('getAcceptedSubmissionForUser', () => {
             name: 'Accepted Assignment',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'accepted-template',
+            gradingMode: 'autograding',
         });
         if (assignment === null) throw new Error('assignment fixture missing');
 
@@ -440,6 +484,7 @@ describe('getAcceptedSubmissionForUser', () => {
             name: 'First Assignment',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'template',
+            gradingMode: 'autograding',
         });
         const second = await createAssignmentForProgram(db, {
             instructorId: ownerId,
@@ -447,6 +492,7 @@ describe('getAcceptedSubmissionForUser', () => {
             name: 'Second Assignment',
             deadline: new Date('2026-09-16T18:00:00.000Z'),
             templateRepo: 'template',
+            gradingMode: 'autograding',
         });
         if (first === null || second === null) throw new Error('assignment fixtures missing');
 
@@ -482,6 +528,7 @@ describe('getAcceptedSubmissionForUser', () => {
             name: 'Unclaimed Assignment',
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'unclaimed-template',
+            gradingMode: 'autograding',
         });
         if (assignment === null) throw new Error('assignment fixture missing');
 
@@ -496,6 +543,7 @@ describe('resolveSubmissionForRepo', () => {
         org: string,
         studentName: string,
         repoName: string,
+        grading: { mode: 'manual'; maxScore: number } | null = null,
     ) {
         const creatorId = await instructorId(INSTRUCTOR.login);
         const program = await createProgramWithRoster(db, {
@@ -510,6 +558,8 @@ describe('resolveSubmissionForRepo', () => {
             name: `${name} Assignment`,
             deadline: new Date('2026-09-15T18:00:00.000Z'),
             templateRepo: 'fixture-template',
+            gradingMode: grading?.mode ?? 'autograding',
+            maxScore: grading?.maxScore,
         });
         if (assignment === null) throw new Error('assignment fixture missing');
 
@@ -543,6 +593,27 @@ describe('resolveSubmissionForRepo', () => {
             submissionId: submission.id,
             assignmentId: assignment.id,
             gradingWorkflow: null,
+            gradingMode: 'autograding',
+        });
+    });
+
+    it('reports the grading mode of a manually graded assignment', async () => {
+        const { assignment, submission } = await programWithSubmission(
+            'Manual Resolve Program',
+            'resolve-manual-org',
+            'Alice',
+            'resolve-manual-repo',
+            { mode: 'manual', maxScore: 10 },
+        );
+
+        expect(
+            await resolveSubmissionForRepo(db, 'resolve-manual-org', 'resolve-manual-repo'),
+        ).toEqual({
+            status: 'found',
+            submissionId: submission.id,
+            assignmentId: assignment.id,
+            gradingWorkflow: null,
+            gradingMode: 'manual',
         });
     });
 
@@ -559,5 +630,126 @@ describe('resolveSubmissionForRepo', () => {
         expect(await resolveSubmissionForRepo(db, 'collide-org', 'shared-repo')).toEqual({
             status: 'ambiguous',
         });
+    });
+});
+
+describe('setSubmissionScore', () => {
+    /** Creates a program in `org` whose single roster entry is 'Alice'. */
+    async function scoringProgram(org: string) {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        return await createProgramWithRoster(db, {
+            creatorId: ownerId,
+            name: `${org} program`,
+            org,
+            studentNames: ['Alice'],
+        });
+    }
+
+    /** Creates a manually graded assignment in the given program. */
+    async function manualAssignmentOf(programId: string, name: string) {
+        const ownerId = await instructorId(INSTRUCTOR.login);
+        const assignment = await createAssignmentForProgram(db, {
+            instructorId: ownerId,
+            programId,
+            name,
+            deadline: new Date('2026-09-15T18:00:00.000Z'),
+            templateRepo: 'manual-template',
+            gradingMode: 'manual',
+            maxScore: 10,
+        });
+        if (assignment === null) throw new Error('assignment fixture missing');
+        return assignment;
+    }
+
+    /** Inserts a submission for the program's only roster entry. */
+    async function submissionOf(
+        assignmentId: string,
+        programId: string,
+        repoName: string,
+        values: {
+            score?: string;
+            maxScore?: string;
+            gradedAt?: Date;
+            gradingRunId?: number;
+            gradingConclusion?: string;
+            gradingHeadSha?: string;
+        } = {},
+    ) {
+        const [entry] = await db
+            .select({ id: rosterEntries.id })
+            .from(rosterEntries)
+            .where(eq(rosterEntries.programId, programId));
+        if (typeof entry === 'undefined') throw new Error('roster fixture missing');
+
+        const [submission] = await db
+            .insert(submissions)
+            .values({ assignmentId, rosterEntryId: entry.id, repoName, ...values })
+            .returning({ id: submissions.id });
+        if (typeof submission === 'undefined') throw new Error('submission fixture missing');
+        return submission.id;
+    }
+
+    async function storedSubmission(submissionId: string) {
+        const [stored] = await db
+            .select()
+            .from(submissions)
+            .where(eq(submissions.id, submissionId));
+        if (typeof stored === 'undefined') throw new Error('submission row missing');
+        return stored;
+    }
+
+    it('writes the manual score and clears the prior grading outcome', async () => {
+        const program = await scoringProgram('manual-write-org');
+        const assignment = await manualAssignmentOf(program.id, 'Manual Assignment');
+        const priorGradedAt = new Date('2026-01-01T00:00:00.000Z');
+        const submissionId = await submissionOf(assignment.id, program.id, 'manual-repo', {
+            score: '1.00',
+            maxScore: '5.00',
+            gradedAt: priorGradedAt,
+            gradingRunId: 42,
+            gradingConclusion: 'failure',
+            gradingHeadSha: 'sha-old',
+        });
+
+        expect(await setSubmissionScore(db, submissionId, assignment.id, '8.50', '10.00')).toEqual([
+            { id: submissionId },
+        ]);
+
+        const stored = await storedSubmission(submissionId);
+        expect(stored.score).toBe('8.50');
+        expect(stored.maxScore).toBe('10.00');
+        expect(stored.gradingConclusion).toBeNull();
+        expect(stored.gradedAt).toBeInstanceOf(Date);
+        expect(stored.gradedAt?.getTime()).toBeGreaterThan(priorGradedAt.getTime());
+        expect(stored.gradingRunId).toBe(42);
+        expect(stored.gradingHeadSha).toBe('sha-old');
+    });
+
+    it('leaves a submission of another assignment untouched', async () => {
+        const program = await scoringProgram('manual-scope-org');
+        const first = await manualAssignmentOf(program.id, 'First Assignment');
+        const second = await manualAssignmentOf(program.id, 'Second Assignment');
+        const submissionId = await submissionOf(second.id, program.id, 'second-manual-repo', {
+            score: '1.00',
+            maxScore: '10.00',
+        });
+
+        expect(await setSubmissionScore(db, submissionId, first.id, '9.00', '10.00')).toEqual([]);
+
+        const stored = await storedSubmission(submissionId);
+        expect(stored.score).toBe('1.00');
+        expect(stored.gradedAt).toBeNull();
+    });
+
+    it('returns no rows for an unknown submission', async () => {
+        expect(
+            await setSubmissionScore(
+                db,
+                '00000000-0000-0000-0000-000000000000',
+                '11111111-1111-1111-1111-111111111111',
+                '1.00',
+                '10.00',
+            ),
+        ).toEqual([]);
     });
 });

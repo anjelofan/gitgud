@@ -161,6 +161,7 @@ async function acceptedAssignment(options?: {
         name: options?.assignmentName ?? 'Fibonacci',
         deadline: new Date('2026-09-15T18:00:00.000Z'),
         templateRepo: options?.templateRepo ?? 'tpl-repo',
+        gradingMode: 'autograding',
     });
     if (assignment === null) throw new Error('assignment fixture missing');
     return { instructor, program, assignment };

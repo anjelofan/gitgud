@@ -18,9 +18,13 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'DTP Assignment #0',
             deadline: '2026-09-15T18:00',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(true);
-        if (result.success) expect(result.output.deadline).toBeInstanceOf(Date);
+        if (result.success) {
+            expect(result.output.deadline).toBeInstanceOf(Date);
+            expect(result.output.maxScore).toBeUndefined();
+        }
     });
 
     it('trims the assignment name value', () => {
@@ -28,6 +32,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: '   DTP Assignment #0  ',
             deadline: '2026-09-15T18:00',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(true);
         if (result.success) expect(result.output.name).toBe('DTP Assignment #0');
@@ -38,6 +43,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: '   DTP Assignment #0  ',
             deadline: '    2026-09-15T18:00   ',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(true);
         if (result.success) expect(result.output.deadline).toBeInstanceOf(Date);
@@ -48,6 +54,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'DTP Assignment #0',
             deadline: '2026-09-15T18:00',
             templateRepo: '   dtp2627a-00   ',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(true);
         if (result.success) expect(result.output.templateRepo).toBe('dtp2627a-00');
@@ -58,6 +65,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: '    ',
             deadline: '2026-09-15T18:00',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(false);
     });
@@ -67,6 +75,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'DTP Assignment #0',
             deadline: '2026-09-15T18:00',
             templateRepo: '    ',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(false);
     });
@@ -76,6 +85,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'DTP Assignment #0',
             deadline: '    ',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(false);
     });
@@ -85,6 +95,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'DTP Assignment #0',
             deadline: 'no deadline :D',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(false);
     });
@@ -94,6 +105,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'l'.repeat(ASSIGNMENT_NAME_MAX_LENGTH),
             deadline: '2026-09-15T18:00',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(true);
     });
@@ -103,6 +115,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'DTP Assignment #0',
             deadline: '2026-09-15T18:00',
             templateRepo: 'r'.repeat(TEMPLATE_REPO_MAX_LENGTH),
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(true);
     });
@@ -112,6 +125,7 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'l'.repeat(ASSIGNMENT_NAME_MAX_LENGTH + 1),
             deadline: '2026-09-15T18:00',
             templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
         });
         expect(result.success).toBe(false);
     });
@@ -121,6 +135,73 @@ describe('CreateAssignmentInputSchema', () => {
             name: 'DTP Assignment #0',
             deadline: '2026-09-15T18:00',
             templateRepo: 'r'.repeat(TEMPLATE_REPO_MAX_LENGTH + 1),
+            gradingMode: 'autograding',
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects an unknown grading mode', () => {
+        const result = v.safeParse(CreateAssignmentInputSchema, {
+            name: 'DTP Assignment #0',
+            deadline: '2026-09-15T18:00',
+            templateRepo: 'dtp2627a-0',
+            gradingMode: 'vibes',
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it('accepts manual grading with a maximum score', () => {
+        const result = v.safeParse(CreateAssignmentInputSchema, {
+            name: 'DTP Assignment #0',
+            deadline: '2026-09-15T18:00',
+            templateRepo: 'dtp2627a-0',
+            gradingMode: 'manual',
+            maxScore: ' 12.5 ',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) expect(result.output.maxScore).toBe(12.5);
+    });
+
+    it('keeps an autograded assignment free of a maximum score', () => {
+        const result = v.safeParse(CreateAssignmentInputSchema, {
+            name: 'DTP Assignment #0',
+            deadline: '2026-09-15T18:00',
+            templateRepo: 'dtp2627a-0',
+            gradingMode: 'autograding',
+            maxScore: '10',
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it('requires a maximum score for manual grading', () => {
+        const result = v.safeParse(CreateAssignmentInputSchema, {
+            name: 'DTP Assignment #0',
+            deadline: '2026-09-15T18:00',
+            templateRepo: 'dtp2627a-0',
+            gradingMode: 'manual',
+            maxScore: '   ',
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects a maximum score with more than two decimal places', () => {
+        const result = v.safeParse(CreateAssignmentInputSchema, {
+            name: 'DTP Assignment #0',
+            deadline: '2026-09-15T18:00',
+            templateRepo: 'dtp2627a-0',
+            gradingMode: 'manual',
+            maxScore: '10.123',
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects a zero maximum score', () => {
+        const result = v.safeParse(CreateAssignmentInputSchema, {
+            name: 'DTP Assignment #0',
+            deadline: '2026-09-15T18:00',
+            templateRepo: 'dtp2627a-0',
+            gradingMode: 'manual',
+            maxScore: '0',
         });
         expect(result.success).toBe(false);
     });

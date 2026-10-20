@@ -9,13 +9,16 @@ function stringField(formData: FormData, key: string) {
 
 /**
  * Representation-only decode of the create-assignment form; validation happens
- * at the action boundary through `CreateAssignmentInputSchema`.
+ * at the action boundary through `CreateAssignmentInputSchema`. The manual
+ * grading checkbox submits nothing when unchecked, so its presence decides.
  */
 export function decodeCreateAssignmentForm(formData: FormData) {
     return {
         name: stringField(formData, 'name'),
         deadline: stringField(formData, 'deadline'),
         templateRepo: stringField(formData, 'templateRepo'),
+        gradingMode: formData.get('gradingMode') === null ? 'autograding' : 'manual',
+        maxScore: stringField(formData, 'maxScore'),
     };
 }
 

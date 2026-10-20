@@ -23,6 +23,10 @@ export const assignments = pgTable(
         deadline: timestamp('deadline', { withTimezone: true }).notNull(),
         inviteToken: text('invite_token').notNull().unique(),
         templateRepo: text('template_repo').notNull(),
+        gradingMode: text('grading_mode', { enum: ['autograding', 'manual'] })
+            .notNull()
+            .default('autograding'),
+        maxScore: numeric('max_score', { precision: 7, scale: 2 }),
         gradingWorkflow: text('grading_workflow'),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true })

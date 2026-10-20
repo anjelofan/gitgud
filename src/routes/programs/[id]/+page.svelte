@@ -11,6 +11,8 @@
         name: string;
         deadline: string;
         templateRepo: string;
+        gradingMode: string;
+        maxScore: string;
     }
 
     interface RosterFormData {
@@ -27,30 +29,33 @@
             assignments: Pick<Assignment, 'id' | 'name'>[];
         };
         form:
-            | ({
+            | {
                   scope: 'assignment';
                   message: string;
                   issues: Issue[];
                   data: AssignmentFormData;
-              } & Record<string, unknown>)
-            | ({
+              }
+            | {
                   scope: 'roster';
                   message: string;
                   issues: Issue[];
                   data: RosterFormData;
-              } & Record<string, unknown>)
+              }
             | null;
     }
 
     let { data, form }: Props = $props();
     let { program, students, assignments } = $derived(data);
 
-    let assignmentForm = $derived(
-        form !== null && form.scope === 'assignment' && 'issues' in form ? form : null,
-    );
-    let rosterForm = $derived(
-        form !== null && form.scope === 'roster' && 'issues' in form ? form : null,
-    );
+    let assignmentForm = $derived(form !== null && form.scope === 'assignment' ? form : null);
+    let rosterForm = $derived(form !== null && form.scope === 'roster' ? form : null);
+
+    function initialManualGrading() {
+        if (form === null || form.scope !== 'assignment') return false;
+        return form.data.gradingMode === 'manual';
+    }
+
+    let manualGrading = $state(initialManualGrading());
 
     function renameValue(student: Pick<RosterEntry, 'id' | 'name'>) {
         if (rosterForm === null) return student.name;
@@ -118,6 +123,29 @@
                 />
             </label>
         </div>
+
+        <div>
+            <label>
+                <input type="checkbox" name="gradingMode" bind:checked={manualGrading} />
+                Grade manually
+            </label>
+        </div>
+
+        {#if manualGrading}
+            <div>
+                <label>
+                    <p>Maximum score</p>
+                    <input
+                        type="number"
+                        name="maxScore"
+                        step="0.01"
+                        min="0.01"
+                        value={assignmentForm === null ? '' : assignmentForm.data.maxScore}
+                        required
+                    />
+                </label>
+            </div>
+        {/if}
         <button type="submit">Create Assignment</button>
     </form>
 

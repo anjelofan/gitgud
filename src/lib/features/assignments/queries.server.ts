@@ -8,6 +8,8 @@ import type { DbConnection, DbTransaction } from '$lib/server/db';
 import { Logger } from '$lib/server/telemetry/logger';
 import { Tracer } from '$lib/server/telemetry/tracer';
 
+import type { GradingMode } from './contracts';
+
 const SERVICE_NAME = 'assignments.queries';
 const logger = Logger.byName(SERVICE_NAME);
 const tracer = Tracer.byName(SERVICE_NAME);
@@ -18,6 +20,8 @@ export interface CreateAssignmentArgs {
     name: string;
     deadline: Date;
     templateRepo: string;
+    gradingMode: GradingMode;
+    maxScore?: number; // Should only be defined if gradingMode === 'manual'
 }
 
 /**
@@ -49,6 +53,8 @@ export async function createAssignmentForProgram(db: DbConnection, args: CreateA
                 name: args.name,
                 deadline: args.deadline,
                 templateRepo: args.templateRepo,
+                gradingMode: args.gradingMode,
+                maxScore: typeof args.maxScore === 'number' ? args.maxScore.toFixed(2) : null,
                 inviteToken: randomBytes(32).toString('base64url'),
             })
             .returning();
@@ -94,6 +100,7 @@ export async function getAssignmentForInstructor(
 
         const students = await db
             .select({
+                submissionId: submissions.id,
                 name: rosterEntries.name,
                 login: users.login,
                 avatarUrl: users.avatarUrl,
@@ -220,6 +227,7 @@ export type SubmissionLookup =
           submissionId: string;
           assignmentId: string;
           gradingWorkflow: string | null;
+          gradingMode: GradingMode;
       }
     | { status: 'missing' }
     | { status: 'ambiguous' };
@@ -228,6 +236,7 @@ const submissionLookupColumns = {
     submissionId: submissions.id,
     assignmentId: assignments.id,
     gradingWorkflow: assignments.gradingWorkflow,
+    gradingMode: assignments.gradingMode,
 } as const;
 
 function submissionLookupWhere(org: string, repoName: string) {
@@ -238,6 +247,7 @@ interface SubmissionLookupRow {
     submissionId: string;
     assignmentId: string;
     gradingWorkflow: string | null;
+    gradingMode: GradingMode;
 }
 
 function toSubmissionLookup(rows: SubmissionLookupRow[]): SubmissionLookup {
@@ -291,5 +301,34 @@ export async function lockSubmissionForRepo(
             .for('update');
 
         return toSubmissionLookup(rows);
+    });
+}
+
+/**
+ * Writes a manual score, scoped to the assignment the caller may grade: the
+ * submission id alone would let a caller touch a row outside that assignment.
+ */
+export async function setSubmissionScore(
+    db: DbConnection,
+    submissionId: string,
+    assignmentId: string,
+    score: string,
+    maxScore: string,
+) {
+    return await tracer.asyncSpan('set-submission-score', async (span) => {
+        span.setAttributes({ 'submission.id': submissionId, 'assignment.id': assignmentId });
+
+        return await db
+            .update(submissions)
+            .set({
+                score,
+                maxScore,
+                gradedAt: new Date(),
+                gradingConclusion: null,
+            })
+            .where(
+                and(eq(submissions.id, submissionId), eq(submissions.assignmentId, assignmentId)),
+            )
+            .returning({ id: submissions.id });
     });
 }

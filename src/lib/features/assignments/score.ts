@@ -1,5 +1,7 @@
 import { assertNever } from '$lib/assert';
 
+import type { GradingMode } from './contracts';
+
 /** The submission fields the dashboard's score display is derived from. */
 export interface ScoreSource {
     repoName: string | null;
@@ -51,12 +53,12 @@ function noScoreLabel(conclusion: string | null) {
 }
 
 /** The instructor-facing text for a summary. */
-export function scoreLabel(summary: ScoreSummary) {
+export function scoreLabel(summary: ScoreSummary, gradingMode: GradingMode) {
     switch (summary.status) {
         case 'not-submitted':
             return 'Not submitted';
         case 'awaiting-grading':
-            return 'Awaiting autograding';
+            return gradingMode === 'manual' ? 'Awaiting grading' : 'Awaiting autograding';
         case 'scored':
             return `${summary.score} / ${summary.maxScore}`;
         case 'no-score':

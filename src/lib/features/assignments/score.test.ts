@@ -74,27 +74,43 @@ describe('summarizeScore', () => {
 
 describe('scoreLabel', () => {
     it('labels an unsubmitted roster entry', () => {
-        expect(scoreLabel({ status: 'not-submitted' })).toBe('Not submitted');
+        expect(scoreLabel({ status: 'not-submitted' }, 'autograding')).toBe('Not submitted');
     });
 
     it('labels a submission no run has graded yet', () => {
-        expect(scoreLabel({ status: 'awaiting-grading' })).toBe('Awaiting autograding');
+        expect(scoreLabel({ status: 'awaiting-grading' }, 'autograding')).toBe(
+            'Awaiting autograding',
+        );
+    });
+
+    it('labels a manual submission awaiting grading', () => {
+        expect(scoreLabel({ status: 'awaiting-grading' }, 'manual')).toBe('Awaiting grading');
     });
 
     it('shows earned points over the maximum', () => {
-        expect(scoreLabel({ status: 'scored', score: '8.00', maxScore: '10.00' })).toBe(
-            '8.00 / 10.00',
+        expect(
+            scoreLabel({ status: 'scored', score: '8.00', maxScore: '10.00' }, 'autograding'),
+        ).toBe('8.00 / 10.00');
+    });
+
+    it('shows a manually entered score the same way', () => {
+        expect(scoreLabel({ status: 'scored', score: '8.50', maxScore: '12.00' }, 'manual')).toBe(
+            '8.50 / 12.00',
         );
     });
 
     it('explains a failed autograding run', () => {
-        expect(scoreLabel({ status: 'no-score', conclusion: 'failure' })).toBe(
+        expect(scoreLabel({ status: 'no-score', conclusion: 'failure' }, 'autograding')).toBe(
             'Autograding failed',
         );
     });
 
     it('does not invent a reason for a conclusion it does not recognise', () => {
-        expect(scoreLabel({ status: 'no-score', conclusion: 'neutral' })).toBe('No score reported');
-        expect(scoreLabel({ status: 'no-score', conclusion: null })).toBe('No score reported');
+        expect(scoreLabel({ status: 'no-score', conclusion: 'neutral' }, 'autograding')).toBe(
+            'No score reported',
+        );
+        expect(scoreLabel({ status: 'no-score', conclusion: null }, 'autograding')).toBe(
+            'No score reported',
+        );
     });
 });

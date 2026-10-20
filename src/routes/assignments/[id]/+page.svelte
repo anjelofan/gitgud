@@ -4,6 +4,7 @@
     import { type ScoreSource, scoreLabel, summarizeScore } from '$lib/features/assignments/score';
 
     interface StudentScore extends ScoreSource {
+        submissionId: string | null;
         name: string;
         login: string | null;
         avatarUrl: string | null;
@@ -20,17 +21,30 @@
           }
         | { ok: false; message: string };
 
+    type SetScoreReport =
+        | { ok: true; submissionId: string; score: string; maxScore: string }
+        | { ok: false; message: string };
+
     interface Props {
         data: {
-            assignment: Pick<Assignment, 'name' | 'deadline' | 'inviteToken' | 'templateRepo'>;
+            assignment: Pick<
+                Assignment,
+                'name' | 'deadline' | 'inviteToken' | 'templateRepo' | 'gradingMode' | 'maxScore'
+            >;
             program: Pick<Program, 'name' | 'id' | 'org'>;
             students: StudentScore[];
         };
-        form: { refresh: RefreshReport } | null;
+        form: { refresh?: RefreshReport; setScore?: SetScoreReport } | null;
     }
 
     let { data, form }: Props = $props();
     let { assignment, program, students } = $derived(data);
+    let refreshReport = $derived(
+        form !== null && 'refresh' in form ? (form.refresh ?? null) : null,
+    );
+    let setScoreReport = $derived(
+        form !== null && 'setScore' in form ? (form.setScore ?? null) : null,
+    );
 </script>
 
 <a href={resolve('/programs/[id]', { id: program.id })}> ← Back to {program.name}</a>
@@ -59,19 +73,31 @@
     >
 </p>
 
-<form method="POST" action="?/refresh-scores">
-    <button type="submit">Refresh scores</button>
-</form>
+{#if assignment.gradingMode === 'autograding'}
+    <form method="POST" action="?/refresh-scores">
+        <button type="submit">Refresh scores</button>
+    </form>
+{:else}
+    <p>Manual grading: maximum score {assignment.maxScore}.</p>
+{/if}
 
-{#if form !== null}
-    {#if form.refresh.ok}
+{#if refreshReport !== null}
+    {#if refreshReport.ok}
         <p>
-            {form.refresh.submitted} repositories checked: {form.refresh.recorded} updated,
-            {form.refresh.current} already current, {form.refresh.noScoreFound} no score found,
-            {form.refresh.failed} failed.
+            {refreshReport.submitted} repositories checked: {refreshReport.recorded} updated,
+            {refreshReport.current} already current, {refreshReport.noScoreFound} no score found,
+            {refreshReport.failed} failed.
         </p>
     {:else}
-        <p role="alert">{form.refresh.message}</p>
+        <p role="alert">{refreshReport.message}</p>
+    {/if}
+{/if}
+
+{#if setScoreReport !== null}
+    {#if setScoreReport.ok}
+        <p>Score saved: {setScoreReport.score} / {setScoreReport.maxScore}.</p>
+    {:else}
+        <p role="alert">{setScoreReport.message}</p>
     {/if}
 {/if}
 
@@ -93,7 +119,23 @@
                 {/if}
             </div>
         </div>
-        <span>{scoreLabel(summarizeScore(student))}</span>
+        <span>{scoreLabel(summarizeScore(student), assignment.gradingMode)}</span>
+        {#if assignment.gradingMode === 'manual' && student.submissionId !== null}
+            <form method="POST" action="?/set-score" class="flex items-center gap-2">
+                <input type="hidden" name="submissionId" value={student.submissionId} />
+                <input
+                    type="number"
+                    name="score"
+                    step="0.01"
+                    min="0"
+                    value={student.score ?? ''}
+                    aria-label="Score"
+                    class="w-24 rounded-sm border px-2 py-1"
+                    required
+                />
+                <button type="submit">Save score</button>
+            </form>
+        {/if}
         {#if student.repoName !== null}
             <a
                 href={`https://github.com/${program.org}/${student.repoName}`}
